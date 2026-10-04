@@ -1,0 +1,69 @@
+milestones:
+  - id: M0
+    name: Reconnaissance & Research
+    status: in_progress
+  - id: M1
+    name: Project Bootstrap & Verification
+    status: pending
+  - id: M2
+    name: Foliate-js Android Proof of Concept
+    status: pending
+  - id: M3
+    name: Production Reader Abstraction
+    status: pending
+  - id: M4
+    name: Persistent SQLite Data Layer
+    status: pending
+  - id: M5
+    name: Download Manager
+    status: pending
+  - id: M6
+    name: Offline Local Library
+    status: pending
+  - id: M7
+    name: OPDS 1.2 Client
+    status: pending
+  - id: M8
+    name: OPDS Catalog Browsing UI
+    status: pending
+  - id: M9
+    name: Integration (OPDS + Downloads + Library + Reader)
+    status: pending
+  - id: M10
+    name: Local Reading Progress
+    status: pending
+  - id: M11
+    name: OPDS Progression 1.0 Synchronization
+    status: pending
+  - id: M12
+    name: Reader UX & Settings
+    status: pending
+  - id: M13
+    name: Android Lifecycle Reliability
+    status: pending
+  - id: M14
+    name: Security Review & Hardening
+    status: pending
+  - id: M15
+    name: OPDS Ecosystem Compatibility
+    status: pending
+  - id: M16
+    name: Performance Optimization
+    status: pending
+  - id: M17
+    name: End-to-End Testing & Release Gate
+    status: pending
+
+tasks:
+  - id: GOV-001
+    milestone: M0
+    description: Establish project governance files (AGENTS.md, CLAUDE.md, STATUS.md, tasks.yaml)
+    status: done
+  - id: RES-001
+    milestone: M0
+    description: Research Tauri 2 Android, foliate-js, OPDS 1.2, SQLite & create research docs
+    status: pending
+  - id: BOOT-001
+    milestone: M1
+    description: Install dependencies, configure TypeScript strict mode, ESLint, Vitest, and verify baseline build
+    status: pending
