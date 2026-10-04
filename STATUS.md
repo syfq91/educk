@@ -1,6 +1,6 @@
 # Current Status
 
-**Current Milestone**: M4 — Persistent SQLite Data Layer (Complete)
+**Current Milestone**: M5 — Native Download Engine (Complete)
 
 ---
 
@@ -41,11 +41,21 @@
   - Implemented repositories and connection manager in `src/services/database/` (`DatabaseClient`, `SqlBookRepository`, `SqlSourceRepository`, `SqlProgressRepository`, `SqlSyncStateRepository`, `SqlSettingsRepository`).
   - Created test harness using Node 24's native `node:sqlite` in-memory database to execute real SQLite migrations and test constraints, cascading deletes, and CRUD operations.
   - Wired SQLite persistence into `src/main.ts` and `ReaderViewController` for auto-saving typography settings and reading progress.
+- **Milestone M5 (Native Download Engine)**:
+  - Implemented native HTTP streaming download engine in Rust (`src-tauri/src/downloads/engine.rs` using `reqwest` with pure Rust `rustls` + `tokio`).
+  - Enforced scoped path sandboxing with path traversal defenses (`src-tauri/src/filesystem/paths.rs` storing under `$appData/books/<uuid>/book.epub`).
+  - Implemented defensive EPUB archive integrity validator (`src-tauri/src/downloads/validator.rs`) checking ZIP central directory, mimetype (`application/epub+zip`), container.xml, ZIP bombs (uncompressed limit & compression ratio checks), and ZIP Slip path traversal attempts.
+  - Built `DownloadManager` orchestrating active download registry, duplicate prevention, atomic file commit (`book.epub.part` -> validation -> `book.epub`), cancellation tokens, and throttled IPC progress events (`download://progress`).
+  - Exposed Tauri IPC commands: `download_book`, `cancel_download`, `get_download_status`, and `delete_book_file`.
+  - Defined domain contracts in `src/domain/downloads.ts`, implemented `TauriDownloadService` in `src/services/downloads/`, and built `DownloadController` in `src/features/downloads/`.
+  - Added Milestone M5 download card with real-time progress bar, byte counts, and cancellation controls in Library view.
+  - Connected download completion directly to SQLite `BookRepository`.
+  - Created comprehensive test suites: 13 Rust tests covering path sanitization, archive validation with real fixtures, streaming, cancellation, and HTTP error handling; 11 new Vitest unit tests covering download domain models, service IPC dispatch, and SQLite database persistence.
 
 ---
 
 ## In Progress
-- Milestone M5 preparation: Native Download Engine.
+- Milestone M6 preparation: Offline Local Library.
 
 ---
 
@@ -55,26 +65,24 @@ None.
 ---
 
 ## Known Issues
-None.
+- Android SDK/Java not configured in headless CLI environment for direct `gradlew assembleDebug` invocation; Android-compatible Rust code verified via `cargo check` and clean builds.
 
 ---
 
 ## Next Task
-- **Milestone M5 (Native Download Engine)**:
-  1. Implement native HTTP download engine in Rust (`src-tauri/src/downloads/` using `reqwest` + `tokio`).
-  2. Implement atomic file commit: `book.epub.part` -> archive verification -> atomic rename to `book.epub`.
-  3. Emit download progress events (`download://progress`) over Tauri IPC.
-  4. Enforce path sandboxing (`$appData/books/<generated-id>/book.epub`).
-  5. Connect download completion to `BookRepository` in SQLite.
+- **Milestone M6 (Offline Local Library)**:
+  1. Build offline library bookshelf view displaying downloaded books from SQLite with cover, title, author, and reading progress.
+  2. Implement library sorting (recently read, title, download date).
+  3. Implement book deletion (cleaning up `$appData/books/<id>/` filesystem directory and cascading SQLite records).
+  4. Implement empty states, book opening directly into `ReaderViewController`, and missing file error indicators.
 
 ---
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`)
 - **ESLint (`pnpm run lint`)**: PASS
-- **Unit Tests (`pnpm test`)**: PASS (67/67 tests across 15 test suites)
+- **Unit Tests (`pnpm test`)**: PASS (78/78 tests across 18 test suites)
 - **Frontend Build (`pnpm run build`)**: PASS (`dist/` generated)
 - **Rust Cargo Check (`cargo check`)**: PASS
 - **Rust Clippy (`cargo clippy`)**: PASS (0 warnings)
-- **Rust Cargo Test (`cargo test`)**: PASS (1/1 Rust test passed)
-- **Android Target Build**: PASS (Universal Debug APK built at `src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk`)
+- **Rust Cargo Test (`cargo test`)**: PASS (13/13 Rust unit tests passed)

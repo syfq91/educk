@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ReaderViewController, type ReaderViewElements } from "./features/reader/reader-view.ts";
 import { DatabaseClient, createRepositories, type DatabaseRepositories } from "./services/database/index.ts";
+import { TauriDownloadService } from "./services/downloads/index.ts";
+import { DownloadController, type DownloadUiElements } from "./features/downloads/download-controller.ts";
 import type { ReaderSettings } from "./domain/reader.ts";
 
 let readerController: ReaderViewController | null = null;
@@ -244,6 +246,65 @@ function setupReader(): void {
   });
 }
 
+// Milestone M5 Download Controller Setup
+let downloadController: DownloadController | null = null;
+
+function setupDownloadManager(repositories: DatabaseRepositories | null): DownloadController | null {
+  const container = document.querySelector<HTMLElement>("#download-card");
+  const triggerBtn = document.querySelector<HTMLButtonElement>("#btn-download-sample");
+  const cancelBtn = document.querySelector<HTMLButtonElement>("#btn-cancel-download");
+  const progressBar = document.querySelector<HTMLElement>("#download-progress-container");
+  const progressFill = document.querySelector<HTMLElement>("#download-progress-fill");
+  const statusLabel = document.querySelector<HTMLElement>("#download-status-label");
+  const bytesLabel = document.querySelector<HTMLElement>("#download-bytes-label");
+
+  if (!container || !triggerBtn || !cancelBtn || !progressBar || !progressFill || !statusLabel || !bytesLabel) {
+    return null;
+  }
+
+  if (!repositories) {
+    statusLabel.textContent = "Database offline (Web Preview)";
+    return null;
+  }
+
+  const elements: DownloadUiElements = {
+    container,
+    triggerBtn,
+    cancelBtn,
+    progressBar,
+    progressFill,
+    statusLabel,
+    bytesLabel,
+  };
+
+  const downloadService = new TauriDownloadService();
+  downloadController = new DownloadController(elements, downloadService, repositories.books, {
+    onBookAcquired: (book) => {
+      console.log("Book acquired and committed:", book);
+    },
+    onError: (err) => {
+      console.warn("Download error:", err);
+    },
+  });
+
+  triggerBtn.addEventListener("click", async () => {
+    try {
+      const bookId = "sample-downloaded-epub";
+      const sampleUrl = new URL("/sample.epub", window.location.href).href;
+      await downloadController?.startDownload({
+        bookId,
+        url: sampleUrl,
+        title: "Standard Ebooks Sample (Downloaded)",
+        expectedSize: 45000,
+      });
+    } catch (err) {
+      console.error("Failed to start download:", err);
+    }
+  });
+
+  return downloadController;
+}
+
 // Backend version and status initialization
 async function initApp(): Promise<void> {
   const versionBadge = document.querySelector<HTMLElement>("#app-version");
@@ -273,7 +334,8 @@ async function initApp(): Promise<void> {
 
 window.addEventListener("DOMContentLoaded", async () => {
   setupNavigation();
-  await initDatabase();
+  const dbRepos = await initDatabase();
   setupReader();
+  setupDownloadManager(dbRepos);
   void initApp();
 });

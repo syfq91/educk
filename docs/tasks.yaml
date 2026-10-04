@@ -16,7 +16,7 @@ milestones:
     status: complete
   - id: M5
     name: Download Manager
-    status: pending
+    status: complete
   - id: M6
     name: Offline Local Library
     status: pending
@@ -130,4 +130,28 @@ tasks:
   - id: SQL-006
     milestone: M4
     description: Wire SQLite repositories into reader controller and application shell for persistent preferences and reading progress
+    status: done
+  - id: DL-001
+    milestone: M5
+    description: Implement native streaming HTTP download engine with retries and cancellation in Rust (reqwest + tokio)
+    status: done
+  - id: DL-002
+    milestone: M5
+    description: Enforce path sandboxing and atomic commit ($appData/books/<uuid>/book.epub) with path traversal defenses
+    status: done
+  - id: DL-003
+    milestone: M5
+    description: Implement defensive EPUB archive integrity validator checking ZIP structure, mimetype, container.xml, ZIP bombs, and ZIP Slip
+    status: done
+  - id: DL-004
+    milestone: M5
+    description: Build DownloadManager orchestrating active download registry, deduplication, progress events (download://progress), and IPC commands
+    status: done
+  - id: DL-005
+    milestone: M5
+    description: Implement frontend TauriDownloadService and DownloadController with real-time UI progress bar and cancellation controls
+    status: done
+  - id: DL-006
+    milestone: M5
+    description: Connect download completion to SQLite BookRepository and create comprehensive Rust and Vitest unit test suites
     status: done

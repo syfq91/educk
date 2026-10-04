@@ -1,4 +1,9 @@
+use std::sync::Arc;
 use tauri_plugin_sql::{Migration, MigrationKind};
+
+pub mod commands;
+pub mod downloads;
+pub mod filesystem;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -20,14 +25,24 @@ pub fn run() {
         kind: MigrationKind::Up,
     }];
 
+    let download_manager = Arc::new(downloads::DownloadManager::new());
+
     tauri::Builder::default()
+        .manage(download_manager)
         .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_sql::Builder::default()
                 .add_migrations("sqlite:educk.db", migrations)
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![greet, get_app_version])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            get_app_version,
+            commands::download_book,
+            commands::cancel_download,
+            commands::get_download_status,
+            commands::delete_book_file
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

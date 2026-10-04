@@ -36,6 +36,30 @@
             </div>
           </div>
 
+          <!-- Milestone M5 Native Download Card -->
+          <div class="download-card" id="download-card">
+            <div class="spike-header">
+              <span class="spike-badge">Milestone M5 Download Engine</span>
+              <h3 class="spike-title">Native HTTP Download & Validation</h3>
+            </div>
+            <p class="spike-description">
+              Stream EPUBs directly to sandboxed app storage, validate ZIP & mimetype integrity, and register in SQLite.
+            </p>
+            <div class="spike-actions">
+              <button id="btn-download-sample" class="btn btn-primary">⬇️ Download Sample Book</button>
+              <button id="btn-cancel-download" class="btn btn-danger" disabled>✖ Cancel</button>
+            </div>
+            <div id="download-progress-container" class="download-progress-container hidden">
+              <div class="download-progress-track">
+                <div id="download-progress-fill" class="download-progress-fill"></div>
+              </div>
+              <div class="download-meta-row">
+                <span id="download-status-label">Ready</span>
+                <span id="download-bytes-label">0 KB</span>
+              </div>
+            </div>
+          </div>
+
           <div class="empty-state">
             <div class="empty-icon">📚</div>
             <h2>Your Library</h2>
