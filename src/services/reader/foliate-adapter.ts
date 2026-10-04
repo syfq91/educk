@@ -1,19 +1,24 @@
 /**
  * FoliateReaderAdapter
  *
- * Implements the domain Reader interface using vendored foliate-js.
+ * Implements the production domain Reader interface using vendored foliate-js.
  * Encapsulates the <foliate-view> web component, handles events, manages styles,
- * and enforces strict security sandboxing (blocking ebook script execution).
+ * forwards keyboard navigation, and enforces strict security sandboxing.
  */
 
 import {
   type Reader,
   type ReadingPosition,
   type ReaderTheme,
+  type ReaderFontFamily,
+  type ReaderMargin,
   type ReaderSettings,
+  type ReaderState,
   type ReaderEventMap,
   type BookMetadata,
   type TocItem,
+  BookLoadError,
+  NavigationError,
 } from "../../domain/reader.ts";
 
 import type { FoliateTocItem } from "../../types/foliate-js.d.ts";
@@ -30,6 +35,7 @@ export class FoliateReaderAdapter implements Reader {
   private container: HTMLElement;
   private view: HTMLElementTagNameMap["foliate-view"] | null = null;
   private settings: ReaderSettings;
+  private state: ReaderState = "uninitialized";
   private currentPosition: ReadingPosition | null = null;
   private currentMetadata: BookMetadata | null = null;
   private listeners: Map<keyof ReaderEventMap, Set<ReaderEventMap[keyof ReaderEventMap]>> = new Map();
@@ -41,11 +47,24 @@ export class FoliateReaderAdapter implements Reader {
       fontSize: options.initialSettings?.fontSize ?? 18,
       lineSpacing: options.initialSettings?.lineSpacing ?? 1.5,
       fontFamily: options.initialSettings?.fontFamily ?? "sans-serif",
+      margin: options.initialSettings?.margin ?? "normal",
     };
+  }
+
+  public getState(): ReaderState {
+    return this.state;
+  }
+
+  private setState(newState: ReaderState): void {
+    if (this.state !== newState) {
+      this.state = newState;
+      this.dispatchEvent("statechange", newState);
+    }
   }
 
   public async open(bookData: Blob | ArrayBuffer | string): Promise<void> {
     await this.close();
+    this.setState("loading");
 
     // Normalize ArrayBuffer to Blob with EPUB MIME type
     let fileInput: Blob | string;
@@ -60,14 +79,30 @@ export class FoliateReaderAdapter implements Reader {
     this.view = view;
     this.container.appendChild(view);
 
-    // Bind event listeners
+    // Bind relocation events
     view.addEventListener("relocate", this.handleRelocate.bind(this));
+
+    // Forward keyboard events from inside section iframes
+    view.addEventListener("load", (event: Event) => {
+      const customEvent = event as CustomEvent<{ doc?: Document }>;
+      const doc = customEvent.detail?.doc;
+      if (doc) {
+        doc.addEventListener("keydown", (e: KeyboardEvent) => {
+          this.handleKeydown(e);
+        });
+      }
+    });
 
     try {
       await view.open(fileInput);
     } catch (err) {
-      this.dispatchEvent("error", err instanceof Error ? err : new Error(String(err)));
-      throw err;
+      this.setState("error");
+      const loadError = new BookLoadError(
+        `Failed to open book: ${err instanceof Error ? err.message : String(err)}`,
+        { cause: err },
+      );
+      this.dispatchEvent("error", loadError);
+      throw loadError;
     }
 
     // Security Hardening: suppress script execution in book resources
@@ -91,7 +126,7 @@ export class FoliateReaderAdapter implements Reader {
       await view.renderer.next();
     }
 
-    // Extract book metadata
+    // Extract book metadata & TOC
     if (book?.metadata) {
       const rawTitle = book.metadata.title;
       let titleStr = "Untitled Book";
@@ -121,11 +156,7 @@ export class FoliateReaderAdapter implements Reader {
       }
 
       const rawToc = (book.toc ?? []) as FoliateTocItem[];
-      const tocItems: TocItem[] = rawToc.map((t: FoliateTocItem) => ({
-        label: t.label,
-        href: t.href,
-        subitems: t.subitems?.map((st: FoliateTocItem) => ({ label: st.label, href: st.href })),
-      }));
+      const tocItems: TocItem[] = this.normalizeToc(rawToc);
 
       const metadata: BookMetadata = {
         title: titleStr,
@@ -139,6 +170,16 @@ export class FoliateReaderAdapter implements Reader {
       this.currentMetadata = metadata;
       this.dispatchEvent("load", metadata);
     }
+
+    this.setState("ready");
+  }
+
+  private normalizeToc(items: FoliateTocItem[]): TocItem[] {
+    return items.map((t) => ({
+      label: t.label || "Untitled Section",
+      href: t.href,
+      subitems: t.subitems && t.subitems.length > 0 ? this.normalizeToc(t.subitems) : undefined,
+    }));
   }
 
   public async close(): Promise<void> {
@@ -153,10 +194,11 @@ export class FoliateReaderAdapter implements Reader {
     }
     this.currentPosition = null;
     this.currentMetadata = null;
+    this.setState("closed");
   }
 
   public async next(): Promise<void> {
-    if (!this.view) return;
+    if (!this.view || this.state !== "ready") return;
     if (this.view.goRight) {
       await this.view.goRight();
     } else if (this.view.renderer?.next) {
@@ -165,7 +207,7 @@ export class FoliateReaderAdapter implements Reader {
   }
 
   public async previous(): Promise<void> {
-    if (!this.view) return;
+    if (!this.view || this.state !== "ready") return;
     if (this.view.goLeft) {
       await this.view.goLeft();
     } else if (this.view.renderer?.prev) {
@@ -174,12 +216,33 @@ export class FoliateReaderAdapter implements Reader {
   }
 
   public async goTo(locator: string): Promise<void> {
-    if (!this.view) return;
+    if (!this.view || this.state !== "ready") return;
     try {
       await this.view.goTo(locator);
     } catch (err) {
-      this.dispatchEvent("error", err instanceof Error ? err : new Error(String(err)));
-      throw err;
+      const navError = new NavigationError(
+        `Failed to navigate to locator "${locator}": ${err instanceof Error ? err.message : String(err)}`,
+        { cause: err },
+      );
+      this.dispatchEvent("error", navError);
+      throw navError;
+    }
+  }
+
+  public async goToFraction(fraction: number): Promise<void> {
+    if (!this.view || this.state !== "ready") return;
+    const clamped = Math.max(0, Math.min(1, fraction));
+    try {
+      if (this.view.goToFraction) {
+        await this.view.goToFraction(clamped);
+      }
+    } catch (err) {
+      const navError = new NavigationError(
+        `Failed to navigate to fraction ${clamped}: ${err instanceof Error ? err.message : String(err)}`,
+        { cause: err },
+      );
+      this.dispatchEvent("error", navError);
+      throw navError;
     }
   }
 
@@ -187,14 +250,18 @@ export class FoliateReaderAdapter implements Reader {
     return this.currentPosition;
   }
 
-  public async getMetadata(): Promise<BookMetadata | null> {
-    return this.currentMetadata;
-  }
-
   public async setPosition(position: ReadingPosition): Promise<void> {
     if (position.locator) {
       await this.goTo(position.locator);
     }
+  }
+
+  public async getMetadata(): Promise<BookMetadata | null> {
+    return this.currentMetadata;
+  }
+
+  public async getToc(): Promise<TocItem[]> {
+    return this.currentMetadata?.toc ?? [];
   }
 
   public async setTheme(theme: ReaderTheme): Promise<void> {
@@ -204,6 +271,21 @@ export class FoliateReaderAdapter implements Reader {
 
   public async setFontSize(size: number): Promise<void> {
     this.settings.fontSize = Math.max(12, Math.min(36, size));
+    this.applyStyles();
+  }
+
+  public async setFontFamily(family: ReaderFontFamily): Promise<void> {
+    this.settings.fontFamily = family;
+    this.applyStyles();
+  }
+
+  public async setLineSpacing(spacing: number): Promise<void> {
+    this.settings.lineSpacing = Math.max(1.1, Math.min(2.5, spacing));
+    this.applyStyles();
+  }
+
+  public async setMargin(margin: ReaderMargin): Promise<void> {
+    this.settings.margin = margin;
     this.applyStyles();
   }
 
@@ -274,6 +356,19 @@ export class FoliateReaderAdapter implements Reader {
     this.dispatchEvent("relocate", this.currentPosition);
   }
 
+  private handleKeydown(event: KeyboardEvent): void {
+    const key = event.key;
+    if (key === "ArrowRight" || key === "PageDown") {
+      void this.next();
+    } else if (key === "ArrowLeft" || key === "PageUp") {
+      void this.previous();
+    } else if (key === " " && !event.shiftKey) {
+      void this.next();
+    } else if (key === " " && event.shiftKey) {
+      void this.previous();
+    }
+  }
+
   private applyStyles(): void {
     if (!this.view?.renderer?.setStyles) return;
 
@@ -283,7 +378,22 @@ export class FoliateReaderAdapter implements Reader {
       sepia: { bg: "#f4ecd8", text: "#3d2b1f", link: "#7a4b22" },
     };
 
+    const fontFamilies: Record<ReaderFontFamily, string> = {
+      "sans-serif": '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      serif: 'Georgia, "Times New Roman", Cambria, serif',
+      monospace: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
+    };
+
+    const margins: Record<ReaderMargin, number> = {
+      narrow: 12,
+      normal: 24,
+      wide: 40,
+    };
+
     const colors = themeColors[this.settings.theme];
+    const fontFamily = fontFamilies[this.settings.fontFamily];
+    const marginPx = margins[this.settings.margin];
+
     const css = `
       html {
         color-scheme: ${this.settings.theme === "dark" ? "dark" : "light"};
@@ -293,11 +403,11 @@ export class FoliateReaderAdapter implements Reader {
       body {
         background-color: ${colors.bg} !important;
         color: ${colors.text} !important;
-        font-family: ${this.settings.fontFamily} !important;
+        font-family: ${fontFamily} !important;
         font-size: ${this.settings.fontSize}px !important;
         line-height: ${this.settings.lineSpacing} !important;
         margin: 0 !important;
-        padding: 0 16px !important;
+        padding: 0 ${marginPx}px !important;
       }
       p, li, dd, blockquote {
         line-height: ${this.settings.lineSpacing} !important;

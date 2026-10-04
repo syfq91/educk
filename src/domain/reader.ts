@@ -1,7 +1,39 @@
 /**
- * Pure domain interfaces and types for the educk Reader abstraction.
- * Decouples the application UI and storage from foliate-js rendering details.
+ * Pure domain interfaces, types, and error classes for the educk Reader abstraction.
+ * Decouples the application UI, storage, and synchronization layers from foliate-js rendering details.
  */
+
+// --- Domain Errors ---
+
+export class ReaderError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "ReaderError";
+  }
+}
+
+export class BookLoadError extends ReaderError {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "BookLoadError";
+  }
+}
+
+export class NavigationError extends ReaderError {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "NavigationError";
+  }
+}
+
+export class UnsupportedFormatError extends ReaderError {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "UnsupportedFormatError";
+  }
+}
+
+// --- Domain Models & Settings ---
 
 export interface ReadingPosition {
   bookId?: string;
@@ -14,11 +46,18 @@ export interface ReadingPosition {
 
 export type ReaderTheme = "light" | "dark" | "sepia";
 
+export type ReaderFontFamily = "sans-serif" | "serif" | "monospace";
+
+export type ReaderMargin = "narrow" | "normal" | "wide";
+
+export type ReaderState = "uninitialized" | "loading" | "ready" | "error" | "closed";
+
 export interface ReaderSettings {
   theme: ReaderTheme;
-  fontSize: number;    // in px (e.g. 16)
-  lineSpacing: number; // e.g. 1.4
-  fontFamily: string;  // e.g. 'sans-serif', 'serif'
+  fontSize: number;          // in px (12 to 36)
+  lineSpacing: number;       // e.g. 1.2, 1.5, 1.8
+  fontFamily: ReaderFontFamily;
+  margin: ReaderMargin;      // narrow (12px), normal (24px), wide (40px)
 }
 
 export interface BookMetadata {
@@ -27,6 +66,8 @@ export interface BookMetadata {
   description?: string;
   language?: string;
   identifier?: string;
+  publisher?: string;
+  rights?: string;
   toc?: TocItem[];
 }
 
@@ -39,8 +80,11 @@ export interface TocItem {
 export interface ReaderEventMap {
   relocate: (position: ReadingPosition) => void;
   load: (metadata: BookMetadata) => void;
-  error: (error: Error) => void;
+  error: (error: ReaderError) => void;
+  statechange: (state: ReaderState) => void;
 }
+
+// --- Core Reader Contract ---
 
 export interface Reader {
   open(bookData: Blob | ArrayBuffer | string): Promise<void>;
@@ -48,11 +92,17 @@ export interface Reader {
   next(): Promise<void>;
   previous(): Promise<void>;
   goTo(locator: string): Promise<void>;
+  goToFraction(fraction: number): Promise<void>;
   getPosition(): Promise<ReadingPosition | null>;
   setPosition(position: ReadingPosition): Promise<void>;
-  getMetadata?(): Promise<BookMetadata | null>;
+  getMetadata(): Promise<BookMetadata | null>;
+  getToc(): Promise<TocItem[]>;
   setTheme(theme: ReaderTheme): Promise<void>;
   setFontSize(size: number): Promise<void>;
+  setFontFamily(family: ReaderFontFamily): Promise<void>;
+  setLineSpacing(spacing: number): Promise<void>;
+  setMargin(margin: ReaderMargin): Promise<void>;
+  getState(): ReaderState;
   destroy(): void;
   addEventListener<K extends keyof ReaderEventMap>(event: K, handler: ReaderEventMap[K]): void;
   removeEventListener<K extends keyof ReaderEventMap>(event: K, handler: ReaderEventMap[K]): void;

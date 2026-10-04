@@ -126,3 +126,44 @@ adapter.destroy();
 1. **Custom Elements & Shadow DOM**: Fully supported by modern Android System WebView (Chrome 100+).
 2. **Touch Turn Buttons & Gestures**: Large hit target overlay buttons (`‹` and `›`) provide reliable page turning on mobile screens.
 3. **Viewport & Safe Areas**: Safe-area padding prevents header and footer controls from clipping behind system navigation or status bars.
+
+---
+
+## 7. Milestone M3: Production Reader Architecture
+
+Milestone M3 advances the initial proof-of-concept into a production-grade reading core with strict separation of concerns.
+
+### 7.1 State Machine Lifecycle
+`FoliateReaderAdapter` enforces an explicit state lifecycle:
+`uninitialized` ➔ `loading` ➔ `ready` ➔ `closing` ➔ `closed` / `destroyed` (with transitions to `error` on failure).
+Concurrent calls or invalid transitions throw typed domain errors (`ReaderError`, `BookLoadError`, `NavigationError`, `UnsupportedFormatError`).
+
+### 7.2 Dual-Format Compatibility (EPUB 2 & EPUB 3)
+- **EPUB 3 (Nav Doc)**: Parsed from the package navigation document (`<nav epub:type="toc">`).
+- **EPUB 2 (NCX)**: Automatically extracted from `toc.ncx` via Foliate's `parseNCX` parser when the OPF spine references `toc="ncx"`.
+- **Hierarchical TOC**: Recursive normalization guarantees uniform `TocItem { id, label, href, subitems }` trees regardless of the underlying EPUB version.
+
+### 7.3 Mobile Touch Ergonomics & Navigation
+- **3-Zone Tap Surface**:
+  - Left 20%: Previous page (`reader.previous()`)
+  - Center 60%: Toggle immersive reading chrome (auto-hides header bar and bottom scrubber/controls)
+  - Right 20%: Next page (`reader.next()`)
+- **Touch Swipe Gestures**: Horizontal swipe detection (> 50px delta with minimal vertical drift) for natural page turns.
+- **Iframe Keyboard Capture**: Key events inside the foliate reader iframe do not bubble across the document boundary. The adapter injects `keydown` forwarders onto section documents to capture `ArrowLeft`, `ArrowRight`, and `Space`.
+
+### 7.4 Table of Contents (TOC) Slide-Out Drawer
+- Accessible via the top toolbar or drawer menu.
+- Renders hierarchical chapter lists with indentation.
+- Tracks and highlights active section based on the current `relocate` event href.
+- Closes automatically upon selecting a chapter.
+
+### 7.5 Typography & Layout Controls
+Extended typography configuration injected into the renderer stylesheet:
+- **Font Families**: `sans-serif` (System default), `serif` (Literary), `monospace` (Code/technical).
+- **Line Spacing**: `1.2`, `1.4`, `1.6`, `1.8`.
+- **Margin Profiles**:
+  - `narrow`: 12px horizontal padding (max text density for small mobile screens)
+  - `normal`: 24px horizontal padding (balanced reading)
+  - `wide`: 36px horizontal padding (tablet / reading focus)
+- **Scrubbing**: Fractional progress slider allowing jumping directly across the book via `reader.goToFraction(fraction)`.
+

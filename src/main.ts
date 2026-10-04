@@ -1,10 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
-import { FoliateReaderAdapter } from "./services/reader/foliate-adapter.ts";
-import type { ReaderTheme } from "./domain/reader.ts";
+import { ReaderViewController, type ReaderViewElements } from "./features/reader/reader-view.ts";
 
-let activeReader: FoliateReaderAdapter | null = null;
-let currentFontSize = 18;
-let currentTheme: ReaderTheme = "light";
+let readerController: ReaderViewController | null = null;
 
 // Navigation view switching
 function setupNavigation(): void {
@@ -30,122 +27,128 @@ function setupNavigation(): void {
   });
 }
 
-// Reader Spike Setup & Event Wiring
-function setupReaderSpike(): void {
-  const openSpikeBtn = document.querySelector<HTMLButtonElement>("#btn-open-spike");
-  const readerView = document.querySelector<HTMLElement>("#reader-view");
-  const readerMount = document.querySelector<HTMLElement>("#reader-mount");
+// Production Reader View Controller Initialization
+function setupReader(): void {
+  const overlay = document.querySelector<HTMLElement>("#reader-view");
+  const mount = document.querySelector<HTMLElement>("#reader-mount");
   const backBtn = document.querySelector<HTMLButtonElement>("#reader-btn-back");
+  const title = document.querySelector<HTMLElement>("#reader-title");
+  const chapter = document.querySelector<HTMLElement>("#reader-chapter");
+  const progressBadge = document.querySelector<HTMLElement>("#reader-progress-badge");
+  const cfiDisplay = document.querySelector<HTMLElement>("#reader-cfi");
+  const tocBtn = document.querySelector<HTMLButtonElement>("#reader-btn-toc");
+  const tocDrawer = document.querySelector<HTMLElement>("#reader-toc-drawer");
+  const tocList = document.querySelector<HTMLElement>("#reader-toc-list");
+  const tocBackdrop = document.querySelector<HTMLElement>("#reader-backdrop");
+  const tocCloseBtn = document.querySelector<HTMLButtonElement>("#btn-close-toc");
+  const settingsBtn = document.querySelector<HTMLButtonElement>("#reader-btn-settings");
+  const settingsDrawer = document.querySelector<HTMLElement>("#reader-settings-drawer");
+  const settingsCloseBtn = document.querySelector<HTMLButtonElement>("#btn-close-settings");
   const prevBtn = document.querySelector<HTMLButtonElement>("#reader-btn-prev");
   const nextBtn = document.querySelector<HTMLButtonElement>("#reader-btn-next");
-
-  const titleEl = document.querySelector<HTMLElement>("#reader-title");
-  const chapterEl = document.querySelector<HTMLElement>("#reader-chapter");
-  const progressBadge = document.querySelector<HTMLElement>("#reader-progress-badge");
-  const cfiEl = document.querySelector<HTMLElement>("#reader-cfi");
-  const fontSizeVal = document.querySelector<HTMLElement>("#font-size-val");
+  const slider = document.querySelector<HTMLInputElement>("#reader-progress-slider");
+  const themeButtons = document.querySelectorAll<HTMLButtonElement>(".theme-btn");
+  const fontSizeLabel = document.querySelector<HTMLElement>("#font-size-val");
   const smallerFontBtn = document.querySelector<HTMLButtonElement>("#btn-font-smaller");
   const largerFontBtn = document.querySelector<HTMLButtonElement>("#btn-font-larger");
-  const themeButtons = document.querySelectorAll<HTMLButtonElement>(".theme-btn");
+  const fontFamilySelect = document.querySelector<HTMLSelectElement>("#select-font-family") ?? undefined;
+  const lineSpacingSelect = document.querySelector<HTMLSelectElement>("#select-line-spacing") ?? undefined;
+  const marginSelect = document.querySelector<HTMLSelectElement>("#select-margin") ?? undefined;
+  const tapZoneLeft = document.querySelector<HTMLElement>("#tap-zone-left") ?? undefined;
+  const tapZoneCenter = document.querySelector<HTMLElement>("#tap-zone-center") ?? undefined;
+  const tapZoneRight = document.querySelector<HTMLElement>("#tap-zone-right") ?? undefined;
 
-  if (!openSpikeBtn || !readerView || !readerMount) return;
+  if (
+    !overlay ||
+    !mount ||
+    !backBtn ||
+    !title ||
+    !chapter ||
+    !progressBadge ||
+    !cfiDisplay ||
+    !tocBtn ||
+    !tocDrawer ||
+    !tocList ||
+    !tocBackdrop ||
+    !tocCloseBtn ||
+    !settingsBtn ||
+    !settingsDrawer ||
+    !settingsCloseBtn ||
+    !prevBtn ||
+    !nextBtn ||
+    !slider ||
+    !fontSizeLabel ||
+    !smallerFontBtn ||
+    !largerFontBtn
+  ) {
+    console.error("Required Reader DOM elements not found.");
+    return;
+  }
 
-  const closeReader = async () => {
-    if (activeReader) {
-      await activeReader.close();
-      activeReader.destroy();
-      activeReader = null;
-    }
-    readerView.classList.add("hidden");
+  const elements: ReaderViewElements = {
+    overlay,
+    mount,
+    backBtn,
+    title,
+    chapter,
+    progressBadge,
+    cfiDisplay,
+    tocBtn,
+    tocDrawer,
+    tocList,
+    tocBackdrop,
+    tocCloseBtn,
+    settingsBtn,
+    settingsDrawer,
+    settingsCloseBtn,
+    prevBtn,
+    nextBtn,
+    slider,
+    themeButtons,
+    fontSizeLabel,
+    smallerFontBtn,
+    largerFontBtn,
+    fontFamilySelect,
+    lineSpacingSelect,
+    marginSelect,
+    tapZoneLeft,
+    tapZoneCenter,
+    tapZoneRight,
   };
 
-  backBtn?.addEventListener("click", () => {
-    void closeReader();
+  readerController = new ReaderViewController(elements, {
+    theme: "light",
+    fontSize: 18,
+    lineSpacing: 1.5,
+    fontFamily: "sans-serif",
+    margin: "normal",
   });
 
-  prevBtn?.addEventListener("click", () => {
-    void activeReader?.previous();
-  });
-
-  nextBtn?.addEventListener("click", () => {
-    void activeReader?.next();
-  });
-
-  smallerFontBtn?.addEventListener("click", () => {
-    currentFontSize = Math.max(12, currentFontSize - 2);
-    if (fontSizeVal) fontSizeVal.textContent = `${currentFontSize}px`;
-    void activeReader?.setFontSize(currentFontSize);
-  });
-
-  largerFontBtn?.addEventListener("click", () => {
-    currentFontSize = Math.min(36, currentFontSize + 2);
-    if (fontSizeVal) fontSizeVal.textContent = `${currentFontSize}px`;
-    void activeReader?.setFontSize(currentFontSize);
-  });
-
-  themeButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const selectedTheme = btn.dataset.theme as ReaderTheme;
-      if (!selectedTheme) return;
-      currentTheme = selectedTheme;
-      themeButtons.forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-
-      // Update overlay background
-      const themeColors: Record<ReaderTheme, { bg: string; text: string }> = {
-        light: { bg: "#ffffff", text: "#1a1a1a" },
-        dark: { bg: "#121212", text: "#e0e0e0" },
-        sepia: { bg: "#f4ecd8", text: "#3d2b1f" },
-      };
-      readerView.style.backgroundColor = themeColors[selectedTheme].bg;
-      readerView.style.color = themeColors[selectedTheme].text;
-
-      void activeReader?.setTheme(selectedTheme);
-    });
-  });
-
-  openSpikeBtn.addEventListener("click", async () => {
+  // Launch EPUB 3 Sample
+  const btnEpub3 = document.querySelector<HTMLButtonElement>("#btn-open-epub3");
+  btnEpub3?.addEventListener("click", async () => {
     try {
-      readerView.classList.remove("hidden");
-      if (titleEl) titleEl.textContent = "Loading sample EPUB...";
-      if (cfiEl) cfiEl.textContent = "initializing...";
-
-      if (!activeReader) {
-        activeReader = new FoliateReaderAdapter({
-          container: readerMount,
-          initialSettings: {
-            theme: currentTheme,
-            fontSize: currentFontSize,
-          },
-        });
-
-        activeReader.addEventListener("load", (metadata) => {
-          if (titleEl) titleEl.textContent = metadata.title;
-        });
-
-        activeReader.addEventListener("relocate", (position) => {
-          const percent = Math.round(position.progression * 100);
-          if (progressBadge) progressBadge.textContent = `${percent}%`;
-          if (chapterEl) chapterEl.textContent = position.title || "Reading";
-          if (cfiEl) cfiEl.textContent = position.locator || "—";
-        });
-
-        activeReader.addEventListener("error", (error) => {
-          console.error("Reader error:", error);
-          if (titleEl) titleEl.textContent = "Error loading book";
-        });
-      }
-
-      // Fetch the sample EPUB bundled in public/
       const res = await fetch("/sample.epub");
-      if (!res.ok) {
-        throw new Error(`Failed to load /sample.epub: HTTP ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status} loading /sample.epub`);
       const blob = await res.blob();
-      await activeReader.open(blob);
+      await readerController?.openBook(blob);
     } catch (err) {
-      console.error("Failed to open test EPUB spike:", err);
-      alert(`Could not open reader spike: ${String(err)}`);
+      console.error("Failed to open EPUB 3:", err);
+      alert(`Could not open EPUB 3 sample: ${String(err)}`);
+    }
+  });
+
+  // Launch EPUB 2 Sample
+  const btnEpub2 = document.querySelector<HTMLButtonElement>("#btn-open-epub2");
+  btnEpub2?.addEventListener("click", async () => {
+    try {
+      const res = await fetch("/sample-epub2.epub");
+      if (!res.ok) throw new Error(`HTTP ${res.status} loading /sample-epub2.epub`);
+      const blob = await res.blob();
+      await readerController?.openBook(blob);
+    } catch (err) {
+      console.error("Failed to open EPUB 2:", err);
+      alert(`Could not open EPUB 2 sample: ${String(err)}`);
     }
   });
 }
@@ -169,7 +172,6 @@ async function initApp(): Promise<void> {
       backendStatusEl.style.color = "var(--status-success)";
     }
   } catch (err) {
-    // When running in a standard browser without Tauri backend
     console.warn("Tauri backend not detected or command failed:", err);
     if (backendStatusEl) {
       backendStatusEl.textContent = "Web preview (IPC disconnected)";
@@ -180,6 +182,6 @@ async function initApp(): Promise<void> {
 
 window.addEventListener("DOMContentLoaded", () => {
   setupNavigation();
-  setupReaderSpike();
+  setupReader();
   void initApp();
 });

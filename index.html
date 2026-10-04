@@ -24,14 +24,15 @@
         <section id="view-library" class="view-panel active">
           <div class="spike-card">
             <div class="spike-header">
-              <span class="spike-badge">Milestone M2 Spike</span>
-              <h3 class="spike-title">foliate-js Android Proof of Concept</h3>
+              <span class="spike-badge">Milestone M3 Reader Core</span>
+              <h3 class="spike-title">Production Reader & Dual Format</h3>
             </div>
             <p class="spike-description">
-              Verify local EPUB rendering, page navigation, CFI locator extraction, and strict script blocking.
+              Verify EPUB 3 (Nav Doc) and EPUB 2 (NCX), TOC drawer navigation, immersive tap zones, and typography controls.
             </p>
             <div class="spike-actions">
-              <button id="btn-open-spike" class="btn btn-primary">📖 Open Test EPUB</button>
+              <button id="btn-open-epub3" class="btn btn-primary">📖 Open EPUB 3 Sample</button>
+              <button id="btn-open-epub2" class="btn btn-secondary">📜 Open EPUB 2 Sample</button>
             </div>
           </div>
 
@@ -85,34 +86,59 @@
       </nav>
     </div>
 
-    <!-- Full-screen Reader Overlay for M2 Spike -->
+    <!-- Full-screen Production Reader Overlay -->
     <div id="reader-view" class="reader-overlay hidden">
       <header class="reader-header">
-        <button id="reader-btn-back" class="reader-nav-btn" aria-label="Back to Library">← Back</button>
+        <button id="reader-btn-back" class="reader-nav-btn" aria-label="Back to Library">←</button>
+        <button id="reader-btn-toc" class="reader-nav-btn" aria-label="Table of Contents">☰ Contents</button>
         <div class="reader-meta">
           <div id="reader-title" class="reader-title">Loading book...</div>
           <div id="reader-chapter" class="reader-chapter">Chapter 1</div>
         </div>
+        <button id="reader-btn-settings" class="reader-nav-btn" aria-label="Reader Settings">Aa</button>
         <div id="reader-progress-badge" class="reader-progress-badge">0%</div>
       </header>
 
       <div class="reader-canvas">
+        <!-- 3-Zone Tap Navigation for Immersive Reading -->
+        <div class="reader-tap-zones">
+          <div id="tap-zone-left" class="tap-zone left" title="Previous Page"></div>
+          <div id="tap-zone-center" class="tap-zone center" title="Toggle Toolbars"></div>
+          <div id="tap-zone-right" class="tap-zone right" title="Next Page"></div>
+        </div>
+
         <button id="reader-btn-prev" class="reader-turn-btn prev" aria-label="Previous Page">‹</button>
         <div id="reader-mount" class="reader-mount"></div>
         <button id="reader-btn-next" class="reader-turn-btn next" aria-label="Next Page">›</button>
       </div>
 
       <footer class="reader-footer">
-        <div class="reader-theme-selector">
-          <button id="theme-light" class="theme-btn active" data-theme="light">Light</button>
-          <button id="theme-sepia" class="theme-btn" data-theme="sepia">Sepia</button>
-          <button id="theme-dark" class="theme-btn" data-theme="dark">Dark</button>
+        <!-- Scrubber Slider -->
+        <div class="reader-slider-row">
+          <input
+            type="range"
+            id="reader-progress-slider"
+            min="0"
+            max="1"
+            step="0.001"
+            value="0"
+            class="reader-slider"
+            aria-label="Reading progress scrubber"
+          />
         </div>
 
-        <div class="reader-font-controls">
-          <button id="btn-font-smaller" class="font-btn" aria-label="Decrease Font Size">A-</button>
-          <span id="font-size-val" class="font-size-label">18px</span>
-          <button id="btn-font-larger" class="font-btn" aria-label="Increase Font Size">A+</button>
+        <div class="reader-controls-row">
+          <div class="reader-theme-selector">
+            <button class="theme-btn active" data-theme="light">Light</button>
+            <button class="theme-btn" data-theme="sepia">Sepia</button>
+            <button class="theme-btn" data-theme="dark">Dark</button>
+          </div>
+
+          <div class="reader-font-controls">
+            <button id="btn-font-smaller" class="font-btn" aria-label="Decrease Font Size">A-</button>
+            <span id="font-size-val" class="font-size-label">18px</span>
+            <button id="btn-font-larger" class="font-btn" aria-label="Increase Font Size">A+</button>
+          </div>
         </div>
 
         <div class="reader-cfi-box">
@@ -120,6 +146,52 @@
           <span id="reader-cfi" class="cfi-value">calculating...</span>
         </div>
       </footer>
+
+      <!-- Backdrop for Drawers -->
+      <div id="reader-backdrop" class="drawer-backdrop hidden"></div>
+
+      <!-- TOC Slide-out Drawer -->
+      <aside id="reader-toc-drawer" class="reader-drawer toc-drawer hidden">
+        <div class="drawer-header">
+          <h3>Table of Contents</h3>
+          <button id="btn-close-toc" class="drawer-close-btn" aria-label="Close Contents">✕</button>
+        </div>
+        <ul id="reader-toc-list" class="toc-list"></ul>
+      </aside>
+
+      <!-- Settings Popover / Drawer -->
+      <aside id="reader-settings-drawer" class="reader-drawer settings-drawer hidden">
+        <div class="drawer-header">
+          <h3>Typography & Layout</h3>
+          <button id="btn-close-settings" class="drawer-close-btn" aria-label="Close Settings">✕</button>
+        </div>
+        <div class="settings-content">
+          <div class="setting-group">
+            <label for="select-font-family">Font Family</label>
+            <select id="select-font-family" class="setting-select">
+              <option value="sans-serif">System Sans-Serif</option>
+              <option value="serif">Classic Serif</option>
+              <option value="monospace">Monospace</option>
+            </select>
+          </div>
+          <div class="setting-group">
+            <label for="select-line-spacing">Line Spacing</label>
+            <select id="select-line-spacing" class="setting-select">
+              <option value="1.2">Compact (1.2)</option>
+              <option value="1.5" selected>Standard (1.5)</option>
+              <option value="1.8">Relaxed (1.8)</option>
+            </select>
+          </div>
+          <div class="setting-group">
+            <label for="select-margin">Margins</label>
+            <select id="select-margin" class="setting-select">
+              <option value="narrow">Narrow (12px)</option>
+              <option value="normal" selected>Normal (24px)</option>
+              <option value="wide">Wide (40px)</option>
+            </select>
+          </div>
+        </div>
+      </aside>
     </div>
   </body>
 </html>

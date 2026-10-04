@@ -10,7 +10,7 @@ milestones:
     status: complete
   - id: M3
     name: Production Reader Abstraction
-    status: pending
+    status: complete
   - id: M4
     name: Persistent SQLite Data Layer
     status: pending
@@ -86,4 +86,24 @@ tasks:
   - id: FOL-005
     milestone: M2
     description: Build mobile reader spike UI in frontend shell and automated unit test suite
+    status: done
+  - id: RDR-001
+    milestone: M3
+    description: Implement Reader domain error hierarchy, state machine, and extended Reader interface
+    status: done
+  - id: RDR-002
+    milestone: M3
+    description: Enhance FoliateReaderAdapter with dual-format EPUB 2 (NCX) and EPUB 3 (Nav Doc) navigation structures
+    status: done
+  - id: RDR-003
+    milestone: M3
+    description: Implement mobile ergonomics (3-zone tap surface, touch swipe gestures, and keyboard forwarding)
+    status: done
+  - id: RDR-004
+    milestone: M3
+    description: Implement Table of Contents (TOC) slide-out drawer with active chapter tracking and typography controls
+    status: done
+  - id: RDR-005
+    milestone: M3
+    description: Create EPUB 2 fixture, corrupted fixtures, and comprehensive unit test suites
     status: done
