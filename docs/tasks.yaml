@@ -4,7 +4,7 @@ milestones:
     status: complete
   - id: M1
     name: Project Bootstrap & Verification
-    status: in_progress
+    status: complete
   - id: M2
     name: Foliate-js Android Proof of Concept
     status: pending
@@ -66,4 +66,4 @@ tasks:
   - id: BOOT-001
     milestone: M1
     description: Install dependencies, configure TypeScript strict mode, ESLint, Vitest, and verify baseline build
-    status: pending
+    status: done

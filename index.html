@@ -2,42 +2,70 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>educk</title>
     <link rel="stylesheet" href="/src/styles.css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri App</title>
     <script type="module" src="/src/main.ts" defer></script>
   </head>
 
   <body>
-    <main class="container">
-      <h1>Welcome to Tauri</h1>
+    <div id="app" class="app-layout">
+      <header class="app-header">
+        <h1 class="app-title">educk</h1>
+        <div class="version-badge" id="app-version">v0.1.0</div>
+      </header>
 
-      <div class="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/src/assets/vite.svg" class="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img
-            src="/src/assets/tauri.svg"
-            class="logo tauri"
-            alt="Tauri logo"
-          />
-        </a>
-        <a href="https://www.typescriptlang.org/docs" target="_blank">
-          <img
-            src="/src/assets/typescript.svg"
-            class="logo typescript"
-            alt="typescript logo"
-          />
-        </a>
-      </div>
-      <p>Click on the Tauri logo to learn more about the framework</p>
+      <main class="content-container">
+        <!-- View: Library (Active by default) -->
+        <section id="view-library" class="view-panel active">
+          <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <h2>Your Library is Empty</h2>
+            <p>Books downloaded from your OPDS catalogs will appear here for offline reading.</p>
+          </div>
+        </section>
 
-      <form class="row" id="greet-form">
-        <input id="greet-input" placeholder="Enter a name..." />
-        <button type="submit">Greet</button>
-      </form>
-      <p id="greet-msg"></p>
-    </main>
+        <!-- View: Catalogs (Placeholder) -->
+        <section id="view-catalogs" class="view-panel">
+          <div class="empty-state">
+            <div class="empty-icon">🌐</div>
+            <h2>OPDS Catalogs</h2>
+            <p>Catalog browsing and acquisition will be enabled in Milestone M8.</p>
+          </div>
+        </section>
+
+        <!-- View: Settings (Placeholder) -->
+        <section id="view-settings" class="view-panel">
+          <div class="settings-card">
+            <h3>About educk</h3>
+            <p>Lightweight Android DRM-free ebook reader.</p>
+            <div class="settings-row">
+              <span>Frontend Version:</span>
+              <strong id="fe-version">0.1.0</strong>
+            </div>
+            <div class="settings-row">
+              <span>Backend Status:</span>
+              <strong id="backend-status" class="status-badge">Connecting...</strong>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Bottom Navigation Bar for Mobile -->
+      <nav class="bottom-nav">
+        <button class="nav-item active" data-target="view-library">
+          <span class="nav-icon">📖</span>
+          <span class="nav-label">Library</span>
+        </button>
+        <button class="nav-item" data-target="view-catalogs">
+          <span class="nav-icon">🔍</span>
+          <span class="nav-label">Catalogs</span>
+        </button>
+        <button class="nav-item" data-target="view-settings">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Settings</span>
+        </button>
+      </nav>
+    </div>
   </body>
 </html>

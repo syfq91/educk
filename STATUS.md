@@ -1,39 +1,34 @@
 # Current Status
 
-**Current Milestone**: M1 — Project Bootstrap & Verification (M0 Complete)
+**Current Milestone**: M1 — Project Bootstrap & Verification (Complete)
 
 ---
 
 ## Completed
-- Tauri 2 + Vanilla TypeScript skeleton scaffolded
-- Git version control initialized (`main` branch)
-- Project governance and development rules established:
-  - [AGENTS.md](file:///home/syafiq/code/educk/AGENTS.md): Architectural boundaries, security directives, core rules
-  - [CLAUDE.md](file:///home/syafiq/code/educk/CLAUDE.md): Agent operational guidelines & verification checklist
-  - [STATUS.md](file:///home/syafiq/code/educk/STATUS.md): Machine & human readable tracking
-  - [docs/tasks.yaml](file:///home/syafiq/code/educk/docs/tasks.yaml): Machine-readable milestone status
-- **Milestone M0 (Reconnaissance & Architecture)**:
-  - [docs/research/tauri.md](file:///home/syafiq/code/educk/docs/research/tauri.md): Tauri 2 Android capabilities & filesystem storage
-  - [docs/research/foliate.md](file:///home/syafiq/code/educk/docs/research/foliate.md): foliate-js modules, adapter pattern, and sandboxing
-  - [docs/research/opds.md](file:///home/syafiq/code/educk/docs/research/opds.md): OPDS 1.2 specifications, XML safety, and feed types
-  - [docs/research/progression.md](file:///home/syafiq/code/educk/docs/research/progression.md): OPDS Progression 1.0 sync and conflict algorithm
-  - [docs/product.md](file:///home/syafiq/code/educk/docs/product.md): Product scope, MVP boundaries, non-goals
-  - [docs/architecture.md](file:///home/syafiq/code/educk/docs/architecture.md): 7-layer architecture and Tauri IPC boundaries
-  - [docs/security.md](file:///home/syafiq/code/educk/docs/security.md): Threat model, CSP rules, script execution prevention
-  - [docs/data-model.md](file:///home/syafiq/code/educk/docs/data-model.md): SQLite schema and migration policy
-  - [docs/testing.md](file:///home/syafiq/code/educk/docs/testing.md): Testing tiers, negative test matrix, and lifecycle tests
-  - Architecture Decision Records:
-    - [ADR 001: Vendoring foliate-js](file:///home/syafiq/code/educk/docs/decisions/001-reader-engine.md)
-    - [ADR 002: Native Rust Download Engine](file:///home/syafiq/code/educk/docs/decisions/002-download-engine.md)
-    - [ADR 003: Storage Isolation and UUID Paths](file:///home/syafiq/code/educk/docs/decisions/003-storage-isolation.md)
-- `pnpm install` completed successfully (resolved and installed frontend packages)
-- TypeScript build check passed (`pnpm run build`)
+- **Governance & Setup**:
+  - [AGENTS.md](file:///home/syafiq/code/educk/AGENTS.md): Core engineering rules, architectural boundaries, and security rules
+  - [CLAUDE.md](file:///home/syafiq/code/educk/CLAUDE.md): Agent operational instructions and verification checklist
+  - [STATUS.md](file:///home/syafiq/code/educk/STATUS.md): Real-time project status
+  - [docs/tasks.yaml](file:///home/syafiq/code/educk/docs/tasks.yaml): Machine-readable roadmap
+- **Milestone M0 (Reconnaissance & Research)**:
+  - Researched and documented Tauri 2 Android, foliate-js, OPDS 1.2, Progression 1.0, SQLite data model, security threat model, and testing strategy.
+  - Recorded ADRs 001–003.
+- **Milestone M1 (Bootstrap & Baseline Verification)**:
+  - Initialized Android project (`tauri android init` generating `src-tauri/gen/android`).
+  - Configured TypeScript strict mode (`tsconfig.json`).
+  - Configured ESLint with flat config (`eslint.config.js`).
+  - Configured Vitest test runner (`vitest`) and wrote initial unit test (`tests/unit/app.test.ts`).
+  - Created minimal mobile application shell:
+    - Home screen with empty library state
+    - Navigation placeholder with bottom bar (Library, Catalogs, Settings)
+    - Application version display querying Rust Tauri command (`get_app_version`)
+    - Dark and light responsive themes
+  - Verified compilation and built Android Debug APK (`src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk`).
 
 ---
 
 ## In Progress
-- Rust Cargo check compiling crate dependencies.
-- Configuring Vitest, ESLint, and testing infrastructure for Milestone M1.
+- Milestone M2 preparation: Foliate-js Android proof-of-concept spike.
 
 ---
 
@@ -48,15 +43,19 @@ None.
 ---
 
 ## Next Task
-- Complete baseline Rust check (`cargo check`).
-- Configure linting and unit test runner (`vitest`, `@eslint/js`, `typescript-eslint`).
-- Prepare Phase 2 (Foliate-js Android proof-of-concept spike).
+- **Milestone M2 (Foliate-js Android Proof of Concept)**:
+  1. Pin and vendor `foliate-js` under `vendor/foliate-js`.
+  2. Implement minimal ReaderAdapter spike.
+  3. Load test EPUB fixture and verify rendering, page navigation, and CFI extraction in WebView.
+  4. Verify strict CSP blocks ebook JavaScript from accessing Tauri/browser APIs.
 
 ---
 
-## Verification
-- **Frontend Build (`tsc && vite build`)**: PASS
-- **Rust Cargo Check**: RUNNING (compiling dependencies)
-- **Node**: v24.21.0
-- **pnpm**: 12.8.1
-- **Cargo**: 1.99.0
+## Verification Summary
+- **TypeScript (`pnpm run typecheck`)**: PASS
+- **ESLint (`pnpm run lint`)**: PASS
+- **Unit Tests (`pnpm test`)**: PASS (1/1 tests)
+- **Frontend Build (`pnpm run build`)**: PASS
+- **Rust Cargo Check (`cargo check`)**: PASS
+- **Rust Clippy (`cargo clippy`)**: PASS (0 warnings)
+- **Android Target Build (`tauri android build --apk`)**: PASS (`app-universal-debug.apk` generated)
