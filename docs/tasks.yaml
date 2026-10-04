@@ -13,7 +13,7 @@ milestones:
     status: complete
   - id: M4
     name: Persistent SQLite Data Layer
-    status: pending
+    status: complete
   - id: M5
     name: Download Manager
     status: pending
@@ -106,4 +106,28 @@ tasks:
   - id: RDR-005
     milestone: M3
     description: Create EPUB 2 fixture, corrupted fixtures, and comprehensive unit test suites
+    status: done
+  - id: SQL-001
+    milestone: M4
+    description: Integrate tauri-plugin-sql in Rust and mobile capabilities with SQLite driver
+    status: done
+  - id: SQL-002
+    milestone: M4
+    description: Author versioned immutable migration 001_initial_schema.sql (sources, books, reading_progress, sync_state, settings)
+    status: done
+  - id: SQL-003
+    milestone: M4
+    description: Define domain persistence models and repository contracts (src/domain/database.ts)
+    status: done
+  - id: SQL-004
+    milestone: M4
+    description: Implement repositories and connection manager (src/services/database/)
+    status: done
+  - id: SQL-005
+    milestone: M4
+    description: Create test harness (node:sqlite in-memory driver) and comprehensive test suites covering migrations, cascades, and CRUD
+    status: done
+  - id: SQL-006
+    milestone: M4
+    description: Wire SQLite repositories into reader controller and application shell for persistent preferences and reading progress
     status: done

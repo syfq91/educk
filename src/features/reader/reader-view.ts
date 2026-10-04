@@ -53,17 +53,30 @@ export interface ReaderViewElements {
   tapZoneRight?: HTMLElement;
 }
 
+export interface ReaderViewCallbacks {
+  onSettingsChange?: (settings: ReaderSettings) => void;
+  onPositionChange?: (position: ReadingPosition, bookId?: string) => void;
+  onClose?: () => void;
+}
+
 export class ReaderViewController {
   private elements: ReaderViewElements;
   private reader: Reader | null = null;
   private settings: ReaderSettings;
+  private callbacks: ReaderViewCallbacks;
+  private currentBookId?: string;
   private activeHref: string | null = null;
   private touchStartX = 0;
   private touchStartY = 0;
   private barsVisible = true;
 
-  constructor(elements: ReaderViewElements, initialSettings?: Partial<ReaderSettings>) {
+  constructor(
+    elements: ReaderViewElements,
+    initialSettings?: Partial<ReaderSettings>,
+    callbacks?: ReaderViewCallbacks,
+  ) {
     this.elements = elements;
+    this.callbacks = callbacks ?? {};
     this.settings = {
       theme: initialSettings?.theme ?? "light",
       fontSize: initialSettings?.fontSize ?? 18,
@@ -73,13 +86,18 @@ export class ReaderViewController {
     };
 
     this.bindEvents();
+    this.syncSettingsUi();
   }
 
   public getReader(): Reader | null {
     return this.reader;
   }
 
-  public async openBook(bookData: Blob | ArrayBuffer | string): Promise<void> {
+  public async openBook(
+    bookData: Blob | ArrayBuffer | string,
+    options?: { bookId?: string; initialPosition?: string },
+  ): Promise<void> {
+    this.currentBookId = options?.bookId;
     this.elements.overlay.classList.remove("hidden");
     this.elements.title.textContent = "Loading book...";
     this.elements.cfiDisplay.textContent = "initializing...";
@@ -107,6 +125,8 @@ export class ReaderViewController {
           this.activeHref = position.href;
           this.updateActiveTocItem(position.href);
         }
+
+        this.callbacks.onPositionChange?.(position, this.currentBookId);
       });
 
       this.reader.addEventListener("error", (error) => {
@@ -116,6 +136,14 @@ export class ReaderViewController {
     }
 
     await this.reader.open(bookData);
+
+    if (options?.initialPosition) {
+      try {
+        await this.reader.goTo(options.initialPosition);
+      } catch (err) {
+        console.warn("Could not restore initial reading position:", err);
+      }
+    }
   }
 
   public async close(): Promise<void> {
@@ -127,6 +155,54 @@ export class ReaderViewController {
     this.closeTocDrawer();
     this.closeSettingsDrawer();
     this.elements.overlay.classList.add("hidden");
+    this.callbacks.onClose?.();
+  }
+
+  public applySettings(newSettings: Partial<ReaderSettings>): void {
+    this.settings = { ...this.settings, ...newSettings };
+    this.syncSettingsUi();
+    if (this.reader) {
+      if (newSettings.theme) void this.reader.setTheme(this.settings.theme);
+      if (newSettings.fontSize) void this.reader.setFontSize(this.settings.fontSize);
+      if (newSettings.fontFamily) void this.reader.setFontFamily(this.settings.fontFamily);
+      if (newSettings.lineSpacing) void this.reader.setLineSpacing(this.settings.lineSpacing);
+      if (newSettings.margin) void this.reader.setMargin(this.settings.margin);
+    }
+  }
+
+  public getSettings(): ReaderSettings {
+    return { ...this.settings };
+  }
+
+  public syncSettingsUi(): void {
+    this.elements.fontSizeLabel.textContent = `${this.settings.fontSize}px`;
+    if (this.elements.fontFamilySelect) {
+      this.elements.fontFamilySelect.value = this.settings.fontFamily;
+    }
+    if (this.elements.lineSpacingSelect) {
+      this.elements.lineSpacingSelect.value = String(this.settings.lineSpacing);
+    }
+    if (this.elements.marginSelect) {
+      this.elements.marginSelect.value = this.settings.margin;
+    }
+    this.elements.themeButtons.forEach((b) => {
+      if (b.dataset.theme === this.settings.theme) {
+        b.classList.add("active");
+      } else {
+        b.classList.remove("active");
+      }
+    });
+
+    const themeBg: Record<ReaderTheme, { bg: string; text: string }> = {
+      light: { bg: "#ffffff", text: "#1a1a1a" },
+      dark: { bg: "#121212", text: "#e0e0e0" },
+      sepia: { bg: "#f4ecd8", text: "#3d2b1f" },
+    };
+    const t = this.settings.theme;
+    if (themeBg[t]) {
+      this.elements.overlay.style.backgroundColor = themeBg[t].bg;
+      this.elements.overlay.style.color = themeBg[t].text;
+    }
   }
 
   public setBarsVisible(visible: boolean): void {
@@ -269,12 +345,14 @@ export class ReaderViewController {
       this.settings.fontSize = Math.max(12, this.settings.fontSize - 2);
       this.elements.fontSizeLabel.textContent = `${this.settings.fontSize}px`;
       void this.reader?.setFontSize(this.settings.fontSize);
+      this.callbacks.onSettingsChange?.(this.settings);
     });
 
     this.elements.largerFontBtn.addEventListener("click", () => {
       this.settings.fontSize = Math.min(36, this.settings.fontSize + 2);
       this.elements.fontSizeLabel.textContent = `${this.settings.fontSize}px`;
       void this.reader?.setFontSize(this.settings.fontSize);
+      this.callbacks.onSettingsChange?.(this.settings);
     });
 
     // Theme selector
@@ -295,6 +373,7 @@ export class ReaderViewController {
         this.elements.overlay.style.color = themeBg[theme].text;
 
         void this.reader?.setTheme(theme);
+        this.callbacks.onSettingsChange?.(this.settings);
       });
     });
 
@@ -304,6 +383,7 @@ export class ReaderViewController {
       if (family) {
         this.settings.fontFamily = family;
         void this.reader?.setFontFamily(family);
+        this.callbacks.onSettingsChange?.(this.settings);
       }
     });
 
@@ -313,6 +393,7 @@ export class ReaderViewController {
       if (!isNaN(spacing)) {
         this.settings.lineSpacing = spacing;
         void this.reader?.setLineSpacing(spacing);
+        this.callbacks.onSettingsChange?.(this.settings);
       }
     });
 
@@ -322,6 +403,7 @@ export class ReaderViewController {
       if (margin) {
         this.settings.margin = margin;
         void this.reader?.setMargin(margin);
+        this.callbacks.onSettingsChange?.(this.settings);
       }
     });
 

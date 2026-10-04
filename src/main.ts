@@ -1,7 +1,24 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ReaderViewController, type ReaderViewElements } from "./features/reader/reader-view.ts";
+import { DatabaseClient, createRepositories, type DatabaseRepositories } from "./services/database/index.ts";
+import type { ReaderSettings } from "./domain/reader.ts";
 
 let readerController: ReaderViewController | null = null;
+let repos: DatabaseRepositories | null = null;
+
+// Initialize SQLite database repositories
+async function initDatabase(): Promise<DatabaseRepositories | null> {
+  try {
+    const client = DatabaseClient.getInstance();
+    await client.getDatabase();
+    repos = createRepositories(client);
+    console.log("SQLite database connected successfully");
+    return repos;
+  } catch (err) {
+    console.warn("SQLite database not available in current environment (e.g. web preview):", err);
+    return null;
+  }
+}
 
 // Navigation view switching
 function setupNavigation(): void {
@@ -116,22 +133,75 @@ function setupReader(): void {
     tapZoneRight,
   };
 
-  readerController = new ReaderViewController(elements, {
-    theme: "light",
-    fontSize: 18,
-    lineSpacing: 1.5,
-    fontFamily: "sans-serif",
-    margin: "normal",
-  });
+  readerController = new ReaderViewController(
+    elements,
+    {
+      theme: "light",
+      fontSize: 18,
+      lineSpacing: 1.5,
+      fontFamily: "sans-serif",
+      margin: "normal",
+    },
+    {
+      onSettingsChange: (settings) => {
+        if (repos) {
+          void repos.settings.setJSON("reader.settings", settings);
+        }
+      },
+      onPositionChange: (position, bookId) => {
+        if (repos && bookId) {
+          void repos.progress.upsert({
+            bookId,
+            progression: position.progression,
+            locator: position.locator,
+            href: position.href ?? null,
+            chapterTitle: position.title ?? null,
+            modifiedAt: new Date().toISOString(),
+          });
+          void repos.books.updateLastOpened(bookId, new Date().toISOString());
+        }
+      },
+    },
+  );
+
+  // Restore saved reader preferences from SQLite if available
+  if (repos) {
+    void repos.settings.getJSON<ReaderSettings>("reader.settings").then((savedSettings) => {
+      if (savedSettings) {
+        readerController?.applySettings(savedSettings);
+      }
+    });
+  }
 
   // Launch EPUB 3 Sample
   const btnEpub3 = document.querySelector<HTMLButtonElement>("#btn-open-epub3");
   btnEpub3?.addEventListener("click", async () => {
     try {
+      const bookId = "sample-epub3";
+      if (repos) {
+        const existing = await repos.books.findById(bookId);
+        if (!existing) {
+          await repos.books.insert({
+            id: bookId,
+            title: "Standard Ebooks Sample (EPUB 3)",
+            acquisitionUrl: "/sample.epub",
+            mimeType: "application/epub+zip",
+            localPath: "/sample.epub",
+            fileSize: 45000,
+            downloadedAt: new Date().toISOString(),
+          });
+        }
+      }
+
       const res = await fetch("/sample.epub");
       if (!res.ok) throw new Error(`HTTP ${res.status} loading /sample.epub`);
       const blob = await res.blob();
-      await readerController?.openBook(blob);
+
+      const savedProgress = repos ? await repos.progress.findByBookId(bookId) : null;
+      await readerController?.openBook(blob, {
+        bookId,
+        initialPosition: savedProgress?.locator,
+      });
     } catch (err) {
       console.error("Failed to open EPUB 3:", err);
       alert(`Could not open EPUB 3 sample: ${String(err)}`);
@@ -142,10 +212,31 @@ function setupReader(): void {
   const btnEpub2 = document.querySelector<HTMLButtonElement>("#btn-open-epub2");
   btnEpub2?.addEventListener("click", async () => {
     try {
+      const bookId = "sample-epub2";
+      if (repos) {
+        const existing = await repos.books.findById(bookId);
+        if (!existing) {
+          await repos.books.insert({
+            id: bookId,
+            title: "Classic Sample (EPUB 2 NCX)",
+            acquisitionUrl: "/sample-epub2.epub",
+            mimeType: "application/epub+zip",
+            localPath: "/sample-epub2.epub",
+            fileSize: 18000,
+            downloadedAt: new Date().toISOString(),
+          });
+        }
+      }
+
       const res = await fetch("/sample-epub2.epub");
       if (!res.ok) throw new Error(`HTTP ${res.status} loading /sample-epub2.epub`);
       const blob = await res.blob();
-      await readerController?.openBook(blob);
+
+      const savedProgress = repos ? await repos.progress.findByBookId(bookId) : null;
+      await readerController?.openBook(blob, {
+        bookId,
+        initialPosition: savedProgress?.locator,
+      });
     } catch (err) {
       console.error("Failed to open EPUB 2:", err);
       alert(`Could not open EPUB 2 sample: ${String(err)}`);
@@ -180,8 +271,9 @@ async function initApp(): Promise<void> {
   }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
   setupNavigation();
+  await initDatabase();
   setupReader();
   void initApp();
 });
