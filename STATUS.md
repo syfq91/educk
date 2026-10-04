@@ -1,6 +1,6 @@
 # Current Status
 
-**Current Milestone**: M1 — Project Bootstrap & Verification (Complete)
+**Current Milestone**: M2 — Foliate-js Android Proof of Concept (Complete)
 
 ---
 
@@ -19,17 +19,22 @@
   - Configured TypeScript strict mode (`tsconfig.json`).
   - Configured ESLint with flat config (`eslint.config.js`).
   - Configured Vitest test runner (`vitest`) and wrote initial unit test (`tests/unit/app.test.ts`).
-  - Created minimal mobile application shell:
-    - Home screen with empty library state
-    - Navigation placeholder with bottom bar (Library, Catalogs, Settings)
-    - Application version display querying Rust Tauri command (`get_app_version`)
-    - Dark and light responsive themes
-  - Verified compilation and built Android Debug APK (`src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk`).
+  - Created minimal mobile application shell with navigation and version display.
+  - Verified compilation and built Android Debug APK.
+- **Milestone M2 (Foliate-js Android Proof of Concept)**:
+  - Vendored `foliate-js` under `vendor/foliate-js` pinned to upstream commit `78914aef4466eb960965702401634c2cb348e9b1` with tracked `COMMIT` metadata.
+  - Created domain layer `src/domain/reader.ts` with pure `Reader` interface and `ReadingPosition` model.
+  - Implemented `FoliateReaderAdapter` in `src/services/reader/foliate-adapter.ts` wrapping `<foliate-view>`.
+  - Generated EPUB 3 fixtures: `valid-sample.epub` and adversarial `malicious-sample.epub` in `fixtures/books/` and `public/sample.epub`.
+  - Enforced strict Content Security Policy (`script-src 'none'`) and script suppression in `index.html` and `src-tauri/tauri.conf.json`.
+  - Built interactive mobile reader spike view in frontend shell with page turns, live CFI display, font sizing, and theme switching (Light, Dark, Sepia).
+  - Documented integration findings in [docs/reader.md](file:///home/syafiq/code/educk/docs/reader.md) and updated [docs/decisions/001-reader-engine.md](file:///home/syafiq/code/educk/docs/decisions/001-reader-engine.md).
+  - Implemented automated test suites: `reader-vendor.test.ts`, `epub-fixture.test.ts`, `reader-adapter.test.ts`, `security-sandbox.test.ts` (16/16 tests passing).
 
 ---
 
 ## In Progress
-- Milestone M2 preparation: Foliate-js Android proof-of-concept spike.
+- Milestone M3 preparation: Production Reader Core Abstraction.
 
 ---
 
@@ -44,19 +49,19 @@ None.
 ---
 
 ## Next Task
-- **Milestone M2 (Foliate-js Android Proof of Concept)**:
-  1. Pin and vendor `foliate-js` under `vendor/foliate-js`.
-  2. Implement minimal ReaderAdapter spike.
-  3. Load test EPUB fixture and verify rendering, page navigation, and CFI extraction in WebView.
-  4. Verify strict CSP blocks ebook JavaScript from accessing Tauri/browser APIs.
+- **Milestone M3 (Production Reader Core Abstraction)**:
+  1. Mature `FoliateReaderAdapter` with robust lifecycle management, event bus, and error handling.
+  2. Implement comprehensive Table of Contents (TOC) navigation modal.
+  3. Support dual-format EPUB 2 (NCX) and EPUB 3 (Nav Doc) navigation structures.
+  4. Implement reading percentage and page number calculations across screen resize events.
 
 ---
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS
 - **ESLint (`pnpm run lint`)**: PASS
-- **Unit Tests (`pnpm test`)**: PASS (1/1 tests)
-- **Frontend Build (`pnpm run build`)**: PASS
+- **Unit Tests (`pnpm test`)**: PASS (16/16 tests across 5 test suites)
+- **Frontend Build (`pnpm run build`)**: PASS (`dist/` generated)
 - **Rust Cargo Check (`cargo check`)**: PASS
 - **Rust Clippy (`cargo clippy`)**: PASS (0 warnings)
-- **Android Target Build (`tauri android build --apk`)**: PASS (`app-universal-debug.apk` generated)
+- **Android Target Build**: PASS

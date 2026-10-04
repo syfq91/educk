@@ -9,6 +9,7 @@ Welcome to the **educk** technical and architectural documentation directory.
 - [architecture.md](architecture.md): 7-layer architecture, component responsibilities, and Tauri IPC interfaces.
 - [security.md](security.md): Threat modeling for untrusted EPUBs & OPDS feeds, iframe sandbox parameters, and CSP.
 - [data-model.md](data-model.md): SQLite schema for sources, books, reading progress, sync states, and immutable migrations.
+- [reader.md](reader.md): Foliate-js reader integration, shadow DOM architecture, and spike findings.
 - [testing.md](testing.md): Testing tiers (Vitest, Cargo tests, fixtures, Android lifecycle).
 
 ---

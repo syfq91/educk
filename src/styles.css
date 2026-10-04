@@ -205,3 +205,254 @@ html, body {
   font-size: 0.75rem;
   font-weight: 500;
 }
+
+/* Milestone M2 Reader Spike Card */
+.spike-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.spike-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.spike-badge {
+  align-self: flex-start;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background-color: var(--accent-light);
+  color: var(--accent-color);
+}
+
+.spike-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.spike-description {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.btn:active {
+  opacity: 0.8;
+}
+
+.btn-primary {
+  background-color: var(--accent-color);
+  color: #ffffff;
+}
+
+/* Full-Screen Reader Overlay */
+.reader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  color: #1a1a1a;
+  overflow: hidden;
+}
+
+.reader-overlay.hidden {
+  display: none !important;
+}
+
+.reader-header {
+  height: 52px;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: inherit;
+  z-index: 10;
+}
+
+.reader-nav-btn {
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+}
+
+.reader-meta {
+  flex: 1;
+  text-align: center;
+  overflow: hidden;
+  padding: 0 0.5rem;
+}
+
+.reader-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reader-chapter {
+  font-size: 0.72rem;
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reader-progress-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.reader-canvas {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: calc(100% - 110px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.reader-mount {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.reader-mount foliate-view {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.reader-turn-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  width: 44px;
+  height: 64px;
+  background: rgba(0, 0, 0, 0.15);
+  color: inherit;
+  border: none;
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.reader-turn-btn:hover,
+.reader-turn-btn:active {
+  opacity: 1;
+}
+
+.reader-turn-btn.prev {
+  left: 8px;
+}
+
+.reader-turn-btn.next {
+  right: 8px;
+}
+
+.reader-footer {
+  padding: 0.5rem 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  background: inherit;
+  z-index: 10;
+}
+
+.reader-theme-selector,
+.reader-font-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.theme-btn,
+.font-btn {
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.theme-btn.active {
+  border-color: var(--accent-color);
+  background-color: var(--accent-color);
+  color: #ffffff;
+}
+
+.font-size-label {
+  font-size: 0.8rem;
+  min-width: 38px;
+  text-align: center;
+}
+
+.reader-cfi-box {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.68rem;
+  opacity: 0.7;
+  overflow: hidden;
+}
+
+.cfi-value {
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

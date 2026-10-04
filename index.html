@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: data: blob: https:; font-src 'self' asset: data:; connect-src 'self' ipc: http: https:; frame-src 'self' blob: data:;"
+    />
     <title>educk</title>
     <link rel="stylesheet" href="/src/styles.css" />
     <script type="module" src="/src/main.ts" defer></script>
@@ -18,9 +22,22 @@
       <main class="content-container">
         <!-- View: Library (Active by default) -->
         <section id="view-library" class="view-panel active">
+          <div class="spike-card">
+            <div class="spike-header">
+              <span class="spike-badge">Milestone M2 Spike</span>
+              <h3 class="spike-title">foliate-js Android Proof of Concept</h3>
+            </div>
+            <p class="spike-description">
+              Verify local EPUB rendering, page navigation, CFI locator extraction, and strict script blocking.
+            </p>
+            <div class="spike-actions">
+              <button id="btn-open-spike" class="btn btn-primary">📖 Open Test EPUB</button>
+            </div>
+          </div>
+
           <div class="empty-state">
             <div class="empty-icon">📚</div>
-            <h2>Your Library is Empty</h2>
+            <h2>Your Library</h2>
             <p>Books downloaded from your OPDS catalogs will appear here for offline reading.</p>
           </div>
         </section>
@@ -66,6 +83,43 @@
           <span class="nav-label">Settings</span>
         </button>
       </nav>
+    </div>
+
+    <!-- Full-screen Reader Overlay for M2 Spike -->
+    <div id="reader-view" class="reader-overlay hidden">
+      <header class="reader-header">
+        <button id="reader-btn-back" class="reader-nav-btn" aria-label="Back to Library">← Back</button>
+        <div class="reader-meta">
+          <div id="reader-title" class="reader-title">Loading book...</div>
+          <div id="reader-chapter" class="reader-chapter">Chapter 1</div>
+        </div>
+        <div id="reader-progress-badge" class="reader-progress-badge">0%</div>
+      </header>
+
+      <div class="reader-canvas">
+        <button id="reader-btn-prev" class="reader-turn-btn prev" aria-label="Previous Page">‹</button>
+        <div id="reader-mount" class="reader-mount"></div>
+        <button id="reader-btn-next" class="reader-turn-btn next" aria-label="Next Page">›</button>
+      </div>
+
+      <footer class="reader-footer">
+        <div class="reader-theme-selector">
+          <button id="theme-light" class="theme-btn active" data-theme="light">Light</button>
+          <button id="theme-sepia" class="theme-btn" data-theme="sepia">Sepia</button>
+          <button id="theme-dark" class="theme-btn" data-theme="dark">Dark</button>
+        </div>
+
+        <div class="reader-font-controls">
+          <button id="btn-font-smaller" class="font-btn" aria-label="Decrease Font Size">A-</button>
+          <span id="font-size-val" class="font-size-label">18px</span>
+          <button id="btn-font-larger" class="font-btn" aria-label="Increase Font Size">A+</button>
+        </div>
+
+        <div class="reader-cfi-box">
+          <span class="cfi-label">CFI:</span>
+          <span id="reader-cfi" class="cfi-value">calculating...</span>
+        </div>
+      </footer>
     </div>
   </body>
 </html>

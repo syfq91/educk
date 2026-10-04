@@ -7,7 +7,7 @@ milestones:
     status: complete
   - id: M2
     name: Foliate-js Android Proof of Concept
-    status: pending
+    status: complete
   - id: M3
     name: Production Reader Abstraction
     status: pending
@@ -66,4 +66,24 @@ tasks:
   - id: BOOT-001
     milestone: M1
     description: Install dependencies, configure TypeScript strict mode, ESLint, Vitest, and verify baseline build
+    status: done
+  - id: FOL-001
+    milestone: M2
+    description: Vendor pinned foliate-js engine under vendor/foliate-js with COMMIT pin metadata
+    status: done
+  - id: FOL-002
+    milestone: M2
+    description: Implement FoliateReaderAdapter and Reader domain interface
+    status: done
+  - id: FOL-003
+    milestone: M2
+    description: Create valid and adversarial EPUB test fixtures
+    status: done
+  - id: FOL-004
+    milestone: M2
+    description: Enforce strict CSP, script suppression, and sandboxing
+    status: done
+  - id: FOL-005
+    milestone: M2
+    description: Build mobile reader spike UI in frontend shell and automated unit test suite
     status: done

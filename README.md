@@ -51,6 +51,7 @@ See [docs/architecture.md](docs/architecture.md) for full architectural details.
 - [docs/architecture.md](docs/architecture.md) — System architecture and layer boundaries
 - [docs/security.md](docs/security.md) — Threat model, CSP, and sandboxing specifications
 - [docs/data-model.md](docs/data-model.md) — SQLite schema, relations, and migration policies
+- [docs/reader.md](docs/reader.md) — Foliate-js reader integration, shadow DOM, and spike findings
 - [docs/testing.md](docs/testing.md) — Testing strategy, fixture matrix, and Android lifecycle tests
 - [docs/decisions/](docs/decisions/) — Architecture Decision Records (ADRs)
 - [docs/research/](docs/research/) — Research reports on Tauri 2 Android, foliate-js, OPDS 1.2, and Progression
