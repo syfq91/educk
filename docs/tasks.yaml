@@ -1,10 +1,10 @@
 milestones:
   - id: M0
     name: Reconnaissance & Research
-    status: in_progress
+    status: complete
   - id: M1
     name: Project Bootstrap & Verification
-    status: pending
+    status: in_progress
   - id: M2
     name: Foliate-js Android Proof of Concept
     status: pending
@@ -62,7 +62,7 @@ tasks:
   - id: RES-001
     milestone: M0
     description: Research Tauri 2 Android, foliate-js, OPDS 1.2, SQLite & create research docs
-    status: pending
+    status: done
   - id: BOOT-001
     milestone: M1
     description: Install dependencies, configure TypeScript strict mode, ESLint, Vitest, and verify baseline build
