@@ -46,6 +46,7 @@ See [docs/architecture.md](docs/architecture.md) for full architectural details.
 - [STATUS.md](STATUS.md) — Live project status, current milestone, and verification summary
 - [AGENTS.md](AGENTS.md) — Engineering rules, boundaries, and quality requirements
 - [CLAUDE.md](CLAUDE.md) — Operational instructions and autonomous agent handbook
+- [educk-plan.md](educk-plan.md) — Master autonomous agent execution blueprint and phased plan
 - [docs/product.md](docs/product.md) — Product requirements, user flows, and non-goals
 - [docs/architecture.md](docs/architecture.md) — System architecture and layer boundaries
 - [docs/security.md](docs/security.md) — Threat model, CSP, and sandboxing specifications

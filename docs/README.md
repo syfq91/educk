@@ -30,3 +30,4 @@ Welcome to the **educk** technical and architectural documentation directory.
 
 ## Project Tracking
 - [tasks.yaml](tasks.yaml): Machine-readable milestone and granular task tracker.
+- [../educk-plan.md](../educk-plan.md): Master autonomous agent execution blueprint and phased plan.
