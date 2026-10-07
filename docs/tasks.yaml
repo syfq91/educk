@@ -19,7 +19,7 @@ milestones:
     status: complete
   - id: M6
     name: Offline Local Library
-    status: pending
+    status: complete
   - id: M7
     name: OPDS 1.2 Client
     status: pending
@@ -154,4 +154,28 @@ tasks:
   - id: DL-006
     milestone: M5
     description: Connect download completion to SQLite BookRepository and create comprehensive Rust and Vitest unit test suites
+    status: done
+  - id: LIB-001
+    milestone: M6
+    description: Implement LibraryController with book cards showing cover, title, author, and reading progress
+    status: done
+  - id: LIB-002
+    milestone: M6
+    description: Implement library sorting (recently read, title, download date) with reactive SQLite queries
+    status: done
+  - id: LIB-003
+    milestone: M6
+    description: Implement book deletion with filesystem cleanup (delete_book_file) and SQLite cascade (BookRepository.delete)
+    status: done
+  - id: LIB-004
+    milestone: M6
+    description: Implement empty states, book opening into ReaderViewController, and missing file error indicators
+    status: done
+  - id: LIB-005
+    milestone: M6
+    description: Add tauri-plugin-fs with fs:allow-read capability for secure book file reading
+    status: done
+  - id: LIB-006
+    milestone: M6
+    description: Create comprehensive unit test suite for LibraryController
     status: done

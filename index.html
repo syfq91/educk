@@ -60,10 +60,23 @@
             </div>
           </div>
 
-          <div class="empty-state">
+          <!-- Milestone M6 Offline Local Library -->
+          <div class="library-header">
+            <h2 class="library-title">Library</h2>
+            <div class="library-toolbar">
+              <select id="library-sort" class="library-sort-select" aria-label="Sort books">
+                <option value="last_opened">Recently Read</option>
+                <option value="title">Title (A-Z)</option>
+                <option value="downloaded_at">Download Date</option>
+              </select>
+              <button id="library-refresh" class="btn btn-secondary btn-sm" aria-label="Refresh library">⟳</button>
+            </div>
+          </div>
+          <div id="library-list" class="library-list"></div>
+          <div id="library-empty" class="empty-state hidden">
             <div class="empty-icon">📚</div>
-            <h2>Your Library</h2>
-            <p>Books downloaded from your OPDS catalogs will appear here for offline reading.</p>
+            <h2>Your Library is Empty</h2>
+            <p>Download books from OPDS catalogs or use the download button above to add your first book.</p>
           </div>
         </section>
 

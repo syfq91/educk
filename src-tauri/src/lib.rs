@@ -5,6 +5,8 @@ pub mod commands;
 pub mod downloads;
 pub mod filesystem;
 
+tauri::generate_context!();
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -30,6 +32,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(download_manager)
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(
             tauri_plugin_sql::Builder::default()
                 .add_migrations("sqlite:educk.db", migrations)
@@ -41,7 +44,8 @@ pub fn run() {
             commands::download_book,
             commands::cancel_download,
             commands::get_download_status,
-            commands::delete_book_file
+            commands::delete_book_file,
+            commands::read_book_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

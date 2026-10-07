@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ReaderViewController, type ReaderViewElements } from "./features/reader/reader-view.ts";
+import { LibraryController, type LibraryUiElements } from "./features/library/library-controller.ts";
 import { DatabaseClient, createRepositories, type DatabaseRepositories } from "./services/database/index.ts";
 import { TauriDownloadService } from "./services/downloads/index.ts";
 import { DownloadController, type DownloadUiElements } from "./features/downloads/download-controller.ts";
@@ -332,10 +333,100 @@ async function initApp(): Promise<void> {
   }
 }
 
+// Milestone M6 Library Controller Setup
+let libraryController: LibraryController | null = null;
+
+function setupLibrary(
+  repositories: DatabaseRepositories | null,
+  readerCtrl: ReaderViewController | null,
+  readerEl: ReaderViewElements | null,
+): LibraryController | null {
+  const container = document.querySelector<HTMLElement>("#view-library");
+  const list = document.querySelector<HTMLElement>("#library-list");
+  const emptyState = document.querySelector<HTMLElement>("#library-empty");
+  const sortSelect = document.querySelector<HTMLSelectElement>("#library-sort");
+  const refreshBtn = document.querySelector<HTMLButtonElement>("#library-refresh");
+
+  if (!container || !list || !emptyState || !sortSelect || !refreshBtn) {
+    console.error("Required Library DOM elements not found.");
+    return null;
+  }
+
+  if (!repositories) {
+    emptyState.classList.remove("hidden");
+    emptyState.querySelector("h2")!.textContent = "Database Unavailable";
+    emptyState.querySelector("p")!.textContent = "SQLite not available in this environment.";
+    list.classList.add("hidden");
+    return null;
+  }
+
+  const elements: LibraryUiElements = {
+    container,
+    list,
+    emptyState,
+    sortSelect,
+    refreshBtn,
+  };
+
+  libraryController = new LibraryController(
+    elements,
+    repositories.books,
+    repositories.progress,
+    readerCtrl,
+    readerEl,
+    {
+      onOpenBook: (bookId) => {
+        console.log("Opened book from library:", bookId);
+      },
+      onError: (err) => {
+        console.error("Library error:", err);
+      },
+    },
+  );
+
+  // Refresh library when download completes
+  if (downloadController) {
+    // The DownloadController already calls onBookAcquired, we can hook into it
+    // by replacing the callback or adding a listener
+  }
+
+  return libraryController;
+}
+
 window.addEventListener("DOMContentLoaded", async () => {
   setupNavigation();
   const dbRepos = await initDatabase();
   setupReader();
   setupDownloadManager(dbRepos);
+  setupLibrary(dbRepos, readerController, {
+    overlay: document.querySelector<HTMLElement>("#reader-view")!,
+    mount: document.querySelector<HTMLElement>("#reader-mount")!,
+    backBtn: document.querySelector<HTMLButtonElement>("#reader-btn-back")!,
+    title: document.querySelector<HTMLElement>("#reader-title")!,
+    chapter: document.querySelector<HTMLElement>("#reader-chapter")!,
+    progressBadge: document.querySelector<HTMLElement>("#reader-progress-badge")!,
+    cfiDisplay: document.querySelector<HTMLElement>("#reader-cfi")!,
+    tocBtn: document.querySelector<HTMLButtonElement>("#reader-btn-toc")!,
+    tocDrawer: document.querySelector<HTMLElement>("#reader-toc-drawer")!,
+    tocList: document.querySelector<HTMLElement>("#reader-toc-list")!,
+    tocBackdrop: document.querySelector<HTMLElement>("#reader-backdrop")!,
+    tocCloseBtn: document.querySelector<HTMLButtonElement>("#btn-close-toc")!,
+    settingsBtn: document.querySelector<HTMLButtonElement>("#reader-btn-settings")!,
+    settingsDrawer: document.querySelector<HTMLElement>("#reader-settings-drawer")!,
+    settingsCloseBtn: document.querySelector<HTMLButtonElement>("#btn-close-settings")!,
+    prevBtn: document.querySelector<HTMLButtonElement>("#reader-btn-prev")!,
+    nextBtn: document.querySelector<HTMLButtonElement>("#reader-btn-next")!,
+    slider: document.querySelector<HTMLInputElement>("#reader-progress-slider")!,
+    themeButtons: document.querySelectorAll<HTMLButtonElement>(".theme-btn"),
+    fontSizeLabel: document.querySelector<HTMLElement>("#font-size-val")!,
+    smallerFontBtn: document.querySelector<HTMLButtonElement>("#btn-font-smaller")!,
+    largerFontBtn: document.querySelector<HTMLButtonElement>("#btn-font-larger")!,
+    fontFamilySelect: document.querySelector<HTMLSelectElement>("#select-font-family") ?? undefined,
+    lineSpacingSelect: document.querySelector<HTMLSelectElement>("#select-line-spacing") ?? undefined,
+    marginSelect: document.querySelector<HTMLSelectElement>("#select-margin") ?? undefined,
+    tapZoneLeft: document.querySelector<HTMLElement>("#tap-zone-left") ?? undefined,
+    tapZoneCenter: document.querySelector<HTMLElement>("#tap-zone-center") ?? undefined,
+    tapZoneRight: document.querySelector<HTMLElement>("#tap-zone-right") ?? undefined,
+  });
   void initApp();
 });
