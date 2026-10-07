@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { LibraryController } from "../../src/features/library/library-controller.ts";
-import type { Book, BookRepository, ProgressRepository, ReadingProgress } from "../../src/domain/database.ts";
-import type { ReadingPosition } from "../../src/domain/reader.ts";
+import type { Book, BookRepository, ProgressRepository, ReadingProgress as _ReadingProgress } from "../../src/domain/database.ts";
+
+// Mock tauri invoke using vi.hoisted to avoid hoisting issues
+const { mockInvoke } = vi.hoisted(() => ({ mockInvoke: vi.fn() }));
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: mockInvoke,
+}));
 
 // Mock repositories
 const createMockBookRepo = (books: Book[] = []) => ({
@@ -41,6 +46,10 @@ describe("Milestone M6: LibraryController", () => {
   let controller: LibraryController;
 
   beforeEach(() => {
+    mockInvoke.mockReset();
+    mockInvoke.mockResolvedValue(new ArrayBuffer(100));
+    vi.stubGlobal("confirm", vi.fn(() => true));
+
     container = document.createElement("div");
     container.id = "view-library";
 
@@ -202,7 +211,7 @@ describe("Milestone M6: LibraryController", () => {
 
     bookRepo = createMockBookRepo(books);
     // Mock the read_book_file invoke
-    vi.stubGlobal("invoke", vi.fn().mockResolvedValue(new ArrayBuffer(100)));
+    mockInvoke.mockResolvedValue(new ArrayBuffer(100));
 
     controller = new LibraryController(
       { container, list, emptyState, sortSelect, refreshBtn },
@@ -285,7 +294,7 @@ describe("Milestone M6: LibraryController", () => {
     }];
 
     bookRepo = createMockBookRepo(books);
-    vi.stubGlobal("invoke", vi.fn().mockResolvedValue(true));
+    mockInvoke.mockResolvedValue(true);
     vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
 
     controller = new LibraryController(
@@ -304,7 +313,7 @@ describe("Milestone M6: LibraryController", () => {
 
     await new Promise(r => setTimeout(r, 10));
 
-    expect(invoke).toHaveBeenCalledWith("delete_book_file", { bookId: "book-1" });
+    expect(mockInvoke).toHaveBeenCalledWith("delete_book_file", { bookId: "book-1" });
     expect(bookRepo.delete).toHaveBeenCalledWith("book-1");
   });
 
@@ -354,7 +363,7 @@ describe("Milestone M6: LibraryController", () => {
 
     bookRepo = createMockBookRepo(books);
     // Mock invoke to throw file not found error
-    vi.stubGlobal("invoke", vi.fn().mockRejectedValue(new Error("ENOENT: file not found")));
+    mockInvoke.mockRejectedValue(new Error("ENOENT: file not found"));
 
     controller = new LibraryController(
       { container, list, emptyState, sortSelect, refreshBtn },

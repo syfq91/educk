@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { OPDSClient } from "../../src/services/opds/opds-client.ts";
-import type { OPDSFeed, OPDSEntry, OPDSLink } from "../../src/domain/opds.ts";
+import type { OPDSFeed, OPDSEntry, OPDSLink as _OPDSLink } from "../../src/domain/opds.ts";
 
-// Mock fetch globally
+// Mock fetch globally for this test file
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 

@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import path from "node:path";
 // @ts-expect-error type error without @types/node package
 import process from "node:process";
 const host = process.env.TAURI_DEV_HOST;
@@ -29,5 +30,13 @@ export default defineConfig(() => ({
   },
   test: {
     environment: "happy-dom",
+    setupFiles: ["./tests/setup.ts"],
+    include: ["tests/unit/**/*.test.ts"],
+    testTimeout: 10000,
+  },
+  resolve: {
+    alias: {
+      sqlite: path.resolve(__dirname, "tests/mocks/sqlite.ts"),
+    },
   },
 }));
