@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ReaderViewController, type ReaderViewElements } from "./features/reader/reader-view.ts";
 import { LibraryController, type LibraryUiElements } from "./features/library/library-controller.ts";
+import { CatalogsController, type CatalogsUiElements } from "./features/catalogs/catalogs-controller.ts";
 import { DatabaseClient, createRepositories, type DatabaseRepositories } from "./services/database/index.ts";
 import { TauriDownloadService } from "./services/downloads/index.ts";
 import { DownloadController, type DownloadUiElements } from "./features/downloads/download-controller.ts";
@@ -384,19 +385,109 @@ function setupLibrary(
     },
   );
 
-  // Refresh library when download completes
-  if (downloadController) {
-    // The DownloadController already calls onBookAcquired, we can hook into it
-    // by replacing the callback or adding a listener
+  return libraryController;
+}
+
+// Milestone M7 Catalogs Controller Setup
+let catalogsController: CatalogsController | null = null;
+
+function setupCatalogs(
+  repositories: DatabaseRepositories | null,
+  downloadService: TauriDownloadService,
+): CatalogsController | null {
+  const container = document.querySelector<HTMLElement>("#view-catalogs");
+  const catalogList = document.querySelector<HTMLElement>("#catalog-list");
+  const feedView = document.querySelector<HTMLElement>("#feed-view");
+  const feedTitle = document.querySelector<HTMLElement>("#feed-title");
+  const feedBreadcrumb = document.querySelector<HTMLElement>("#feed-breadcrumb");
+  const feedList = document.querySelector<HTMLElement>("#feed-list");
+  const feedEmpty = document.querySelector<HTMLElement>("#feed-empty");
+  const feedLoading = document.querySelector<HTMLElement>("#feed-loading");
+  const feedError = document.querySelector<HTMLElement>("#feed-error");
+  const addCatalogBtn = document.querySelector<HTMLButtonElement>("#btn-add-catalog");
+  const addCatalogModal = document.querySelector<HTMLElement>("#add-catalog-modal");
+  const addCatalogForm = document.querySelector<HTMLFormElement>("#add-catalog-form");
+  const searchInput = document.querySelector<HTMLInputElement>("#feed-search-input");
+  const searchBtn = document.querySelector<HTMLButtonElement>("#feed-search-btn");
+  const paginationPrev = document.querySelector<HTMLButtonElement>("#feed-prev");
+  const paginationNext = document.querySelector<HTMLButtonElement>("#feed-next");
+  const paginationInfo = document.querySelector<HTMLElement>("#feed-page-info");
+
+  if (
+    !container ||
+    !catalogList ||
+    !feedView ||
+    !feedTitle ||
+    !feedBreadcrumb ||
+    !feedList ||
+    !feedEmpty ||
+    !feedLoading ||
+    !feedError ||
+    !addCatalogBtn ||
+    !addCatalogModal ||
+    !addCatalogForm ||
+    !searchInput ||
+    !searchBtn ||
+    !paginationPrev ||
+    !paginationNext ||
+    !paginationInfo
+  ) {
+    console.error("Required Catalogs DOM elements not found.");
+    return null;
   }
 
-  return libraryController;
+  if (!repositories) {
+    catalogList.innerHTML = `
+      <div class="error-state">
+        <p>Database unavailable. Cannot manage catalogs.</p>
+      </div>
+    `;
+    return null;
+  }
+
+  const elements: CatalogsUiElements = {
+    container,
+    catalogList,
+    feedView,
+    feedTitle,
+    feedBreadcrumb,
+    feedList,
+    feedEmpty,
+    feedLoading,
+    feedError,
+    addCatalogBtn,
+    addCatalogModal,
+    addCatalogForm,
+    searchInput,
+    searchBtn,
+    paginationPrev,
+    paginationNext,
+    paginationInfo,
+  };
+
+  catalogsController = new CatalogsController(
+    elements,
+    downloadService,
+    repositories.books,
+    {
+      onDownloadStarted: (bookId) => {
+        console.log("Download started from catalog:", bookId);
+        libraryController?.loadBooks?.();
+      },
+      onError: (err) => {
+        console.error("Catalogs error:", err);
+      },
+    },
+  );
+
+  return catalogsController;
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
   setupNavigation();
   const dbRepos = await initDatabase();
   setupReader();
+  const downloadService = new TauriDownloadService();
   setupDownloadManager(dbRepos);
   setupLibrary(dbRepos, readerController, {
     overlay: document.querySelector<HTMLElement>("#reader-view")!,
@@ -428,5 +519,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     tapZoneCenter: document.querySelector<HTMLElement>("#tap-zone-center") ?? undefined,
     tapZoneRight: document.querySelector<HTMLElement>("#tap-zone-right") ?? undefined,
   });
+  setupCatalogs(dbRepos, downloadService);
   void initApp();
 });

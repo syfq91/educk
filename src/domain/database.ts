@@ -9,6 +9,7 @@ export interface CatalogSource {
   id: string;
   name: string;
   url: string;
+  description?: string | null;
   username?: string | null;
   authType: AuthType;
   authData?: string | null;

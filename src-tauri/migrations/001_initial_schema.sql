@@ -5,11 +5,13 @@ CREATE TABLE IF NOT EXISTS sources (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     url TEXT NOT NULL UNIQUE,
-    username TEXT,
+    description TEXT,
     auth_type TEXT NOT NULL DEFAULT 'none' CHECK (auth_type IN ('none', 'basic', 'bearer')),
-    auth_data TEXT,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    auth_username TEXT,
+    auth_password TEXT,
+    auth_token TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 -- Downloaded & acquired books

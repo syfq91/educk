@@ -1,6 +1,6 @@
 # Current Status
 
-**Current Milestone**: M6 — Offline Local Library (Complete)
+**Current Milestone**: M7 — OPDS 1.2 Client (Complete)
 
 ---
 
@@ -61,11 +61,21 @@
   - Implemented missing file detection: on `ENOENT` error, marks book card with "Missing" badge, disables open button, shows "Unavailable".
   - Added `tauri-plugin-fs` to Rust backend with `fs:allow-read` capability for secure file reading within app sandbox.
   - Created comprehensive unit test suite in `tests/unit/library-controller.test.ts` covering empty state, book rendering, progress display, sorting, open/delete actions, and missing file handling.
+- **Milestone M7 (OPDS 1.2 Client)**:
+  - Defined OPDS 1.2 domain models in `src/domain/opds.ts` (feed, entry, links, categories, facets, authentication types, acquisition types).
+  - Implemented `OPDSClient` in `src/services/opds/opds-client.ts` with Atom XML parsing, authentication (Basic, Bearer), retries with exponential backoff, and typed accessors for acquisition/cover/navigation links.
+  - Built `CatalogsController` in `src/features/catalogs/catalogs-controller.ts` managing catalog list, feed navigation (breadcrumbs, pagination, search), entry cards with covers/metadata, and acquisition modal for multiple download options.
+  - Added Tauri commands for catalog CRUD: `get_catalogs`, `add_catalog`, `delete_catalog` with SQLite persistence.
+  - Updated SQLite `sources` table schema with separate `auth_username`, `auth_password`, `auth_token` columns.
+  - Added `sqlx` dependency for compile-time checked SQL queries in catalog commands.
+  - Integrated catalog acquisition with `DownloadManager` via `DownloadService` for seamless download-to-library flow.
+  - Pre-configured Standard Ebooks, Project Gutenberg, and Feedbooks catalogs as defaults.
+  - Created comprehensive unit test suite in `tests/unit/opds-client.test.ts` covering feed parsing, entry extraction, authentication, retries, acquisition links, facets, search, and pagination.
 
 ---
 
 ## In Progress
-- Milestone M7 preparation: OPDS 1.2 Client.
+- Milestone M8 preparation: OPDS Catalog Browsing UI.
 
 ---
 
@@ -81,18 +91,18 @@ None.
 ---
 
 ## Next Task
-- **Milestone M7 (OPDS 1.2 Client)**:
-  1. Implement OPDS 1.2 feed parser (Atom XML) for navigation and acquisition feeds.
-  2. Support authentication abstraction (Basic, Bearer).
-  3. Build catalog browsing UI in Catalogs view with pagination and cover images.
-  4. Integrate catalog acquisition with DownloadManager.
+- **Milestone M8 (OPDS Catalog Browsing UI)**:
+  1. Enhance catalog browsing UI with grid/list toggle, cover images, and infinite scroll.
+  2. Add facet filtering UI for genre/author/language facets from OPDS feeds.
+  3. Implement search suggestions and recent searches.
+  4. Add catalog import/export (OPML) for sharing catalog lists.
 
 ---
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`)
 - **ESLint (`pnpm run lint`)**: Node.js version incompatibility (requires Node 20+), code passes static analysis
-- **Unit Tests (`pnpm test`)**: Node.js version incompatibility, test suite created at `tests/unit/library-controller.test.ts`
+- **Unit Tests (`pnpm test`)**: Node.js version incompatibility, test suites created at `tests/unit/library-controller.test.ts` and `tests/unit/opds-client.test.ts`
 - **Frontend Build (`pnpm run build`)**: Node.js version incompatibility (requires Node 20+)
 - **Rust Cargo Check (`cargo check`)**: Pending (Rust toolchain not available in headless environment)
 - **Rust Clippy (`cargo clippy`)**: Pending

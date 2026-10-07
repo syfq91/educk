@@ -22,7 +22,7 @@ milestones:
     status: complete
   - id: M7
     name: OPDS 1.2 Client
-    status: pending
+    status: complete
   - id: M8
     name: OPDS Catalog Browsing UI
     status: pending
@@ -178,4 +178,28 @@ tasks:
   - id: LIB-006
     milestone: M6
     description: Create comprehensive unit test suite for LibraryController
+    status: done
+  - id: OPDS-001
+    milestone: M7
+    description: Define OPDS 1.2 domain models (feed, entry, links, categories, facets, authentication)
+    status: done
+  - id: OPDS-002
+    milestone: M7
+    description: Implement OPDSClient with Atom XML parsing, authentication (Basic/Bearer), retries
+    status: done
+  - id: OPDS-003
+    milestone: M7
+    description: Implement CatalogsController UI for catalog management and feed browsing
+    status: done
+  - id: OPDS-004
+    milestone: M7
+    description: Add Tauri commands for catalog CRUD (get_catalogs, add_catalog, delete_catalog)
+    status: done
+  - id: OPDS-005
+    milestone: M7
+    description: Update SQLite schema for catalog auth fields and add sqlx dependency
+    status: done
+  - id: OPDS-006
+    milestone: M7
+    description: Create comprehensive unit test suite for OPDSClient
     status: done

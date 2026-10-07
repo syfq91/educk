@@ -5,9 +5,11 @@ interface SourceRow {
   id: string;
   name: string;
   url: string;
-  username: string | null;
+  description: string | null;
   auth_type: string;
-  auth_data: string | null;
+  auth_username: string | null;
+  auth_password: string | null;
+  auth_token: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -24,9 +26,10 @@ export class SqlSourceRepository implements SourceRepository {
       id: row.id,
       name: row.name,
       url: row.url,
-      username: row.username,
+      description: row.description,
+      username: row.auth_username,
       authType: (row.auth_type as AuthType) || 'none',
-      authData: row.auth_data,
+      authData: row.auth_token ?? row.auth_password ?? row.auth_username,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
@@ -63,15 +66,17 @@ export class SqlSourceRepository implements SourceRepository {
 
   public async insert(source: CatalogSource): Promise<void> {
     await this.db.execute(
-      `INSERT INTO sources (id, name, url, username, auth_type, auth_data, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+      `INSERT INTO sources (id, name, url, description, auth_type, auth_username, auth_password, auth_token, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [
         source.id,
         source.name,
         source.url,
-        source.username ?? null,
+        source.description ?? null,
         source.authType,
-        source.authData ?? null,
+        source.authType === 'basic' ? source.username ?? null : null,
+        source.authType === 'basic' ? source.authData ?? null : null,
+        source.authType === 'bearer' ? source.authData ?? null : null,
         source.createdAt,
         source.updatedAt,
       ],
@@ -83,17 +88,21 @@ export class SqlSourceRepository implements SourceRepository {
       `UPDATE sources SET
         name = ?,
         url = ?,
-        username = ?,
+        description = ?,
         auth_type = ?,
-        auth_data = ?,
+        auth_username = ?,
+        auth_password = ?,
+        auth_token = ?,
         updated_at = ?
        WHERE id = ?;`,
       [
         source.name,
         source.url,
-        source.username ?? null,
+        source.description ?? null,
         source.authType,
-        source.authData ?? null,
+        source.authType === 'basic' ? source.username ?? null : null,
+        source.authType === 'basic' ? source.authData ?? null : null,
+        source.authType === 'bearer' ? source.authData ?? null : null,
         source.updatedAt,
         source.id,
       ],
