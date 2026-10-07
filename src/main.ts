@@ -445,6 +445,20 @@ function setupCatalogs(
     return null;
   }
 
+  // Milestone M8 Enhanced Elements
+  const exportOpmlBtn = document.querySelector<HTMLButtonElement>("#btn-export-opml");
+  const importOpmlBtn = document.querySelector<HTMLButtonElement>("#btn-import-opml");
+  const opmlFileInput = document.querySelector<HTMLInputElement>("#opml-file-input");
+  const viewGridBtn = document.querySelector<HTMLButtonElement>("#btn-view-grid");
+  const viewListBtn = document.querySelector<HTMLButtonElement>("#btn-view-list");
+  const facetsContainer = document.querySelector<HTMLElement>("#feed-facets");
+  const searchSuggestions = document.querySelector<HTMLElement>("#feed-search-suggestions");
+  const scrollSentinel = document.querySelector<HTMLElement>("#feed-scroll-sentinel");
+  const emptyBackBtn = document.querySelector<HTMLButtonElement>("#btn-feed-empty-back");
+  const authModal = document.querySelector<HTMLElement>("#feed-auth-modal");
+  const authForm = document.querySelector<HTMLFormElement>("#feed-auth-form");
+  const authMessage = document.querySelector<HTMLElement>("#feed-auth-message");
+
   const elements: CatalogsUiElements = {
     container,
     catalogList,
@@ -463,12 +477,25 @@ function setupCatalogs(
     paginationPrev,
     paginationNext,
     paginationInfo,
+    exportOpmlBtn,
+    importOpmlBtn,
+    opmlFileInput,
+    viewGridBtn,
+    viewListBtn,
+    facetsContainer,
+    searchSuggestions,
+    scrollSentinel,
+    emptyBackBtn,
+    authModal,
+    authForm,
+    authMessage,
   };
 
   catalogsController = new CatalogsController(
     elements,
     downloadService,
     repositories.books,
+    repositories.sources,
     {
       onDownloadStarted: (bookId) => {
         console.log("Download started from catalog:", bookId);

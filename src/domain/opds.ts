@@ -114,6 +114,8 @@ export interface OPDSFacetValue {
   value: string;
   count: number;
   label?: string;
+  href?: string;
+  active?: boolean;
 }
 
 // --- Acquisition Types ---

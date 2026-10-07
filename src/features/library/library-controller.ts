@@ -183,7 +183,11 @@ export class LibraryController {
         const card = btn.closest(".book-card") as HTMLElement | null;
         if (card) {
           const bookId = card.dataset.bookId;
-          if (bookId) this.openBook(bookId);
+          if (bookId) {
+            this.openBook(bookId).catch(() => {
+              // Error handled via callbacks.onError and markBookMissing
+            });
+          }
         }
       });
     });
@@ -205,7 +209,11 @@ export class LibraryController {
       card.addEventListener("click", (e) => {
         if (!(e.target as HTMLElement).closest("button")) {
           const bookId = card.dataset.bookId;
-          if (bookId) this.openBook(bookId);
+          if (bookId) {
+            this.openBook(bookId).catch(() => {
+              // Error handled via callbacks.onError and markBookMissing
+            });
+          }
         }
       });
     });

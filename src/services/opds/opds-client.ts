@@ -323,13 +323,13 @@ export class OPDSClient {
 
   private parseFacets(element: Element): OPDSFacet[] {
     const facets: OPDSFacet[] = [];
-    
-    // Use TreeWalker to find facetGroup elements with opds namespace
+
+    // 1. Use TreeWalker to find facetGroup elements with opds namespace
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_ELEMENT);
     let node: Node | null;
     while ((node = walker.nextNode())) {
       const el = node as Element;
-      if (el.localName === "facetGroup" && el.namespaceURI === "http://opds-spec.org/2010/catalog") {
+      if (el.localName === "facetGroup" && (el.namespaceURI === "http://opds-spec.org/2010/catalog" || el.prefix === "opds")) {
         const name = el.getAttribute("name") || el.getAttribute("term") || "Unknown";
         const values: OPDSFacetValue[] = [];
 
@@ -338,14 +338,17 @@ export class OPDSClient {
         let valueNode: Node | null;
         while ((valueNode = valueWalker.nextNode())) {
           const valueEl = valueNode as Element;
-          if (valueEl.localName === "facet" && valueEl.namespaceURI === "http://opds-spec.org/2010/catalog") {
+          if (valueEl.localName === "facet" && (valueEl.namespaceURI === "http://opds-spec.org/2010/catalog" || valueEl.prefix === "opds")) {
             const value = valueEl.getAttribute("value") || valueEl.getAttribute("term") || "";
             const countStr = valueEl.getAttribute("count");
             const count = countStr ? parseInt(countStr, 10) : 0;
             const label = valueEl.getAttribute("label") || value;
+            const rawHref = valueEl.getAttribute("href");
+            const href = rawHref ? this.resolveUrl(rawHref, element.baseURI) : undefined;
+            const active = valueEl.getAttribute("active") === "true";
 
             if (value) {
-              values.push({ value, count, label });
+              values.push({ value, count, label, href, active });
             }
           }
         }
@@ -353,6 +356,35 @@ export class OPDSClient {
         if (values.length > 0) {
           facets.push({ name, values });
         }
+      }
+    }
+
+    // 2. Also check standard OPDS 1.2 link elements with rel="http://opds-spec.org/facet"
+    const linkWalker = document.createTreeWalker(element, NodeFilter.SHOW_ELEMENT);
+    while ((node = linkWalker.nextNode())) {
+      const el = node as Element;
+      if (el.localName === "link" && el.getAttribute("rel") === "http://opds-spec.org/facet") {
+        const groupName = el.getAttribute("opds:facetGroup") || el.getAttribute("facetGroup") || "Filter";
+        const title = el.getAttribute("title") || "Option";
+        const hrefRaw = el.getAttribute("href");
+        const href = hrefRaw ? this.resolveUrl(hrefRaw, element.baseURI) : undefined;
+        const countStr = el.getAttribute("opds:count") || el.getAttribute("count");
+        const count = countStr ? parseInt(countStr, 10) : 0;
+        const active = el.getAttribute("opds:activeFacet") === "true" || el.getAttribute("activeFacet") === "true";
+
+        let existingGroup = facets.find((f) => f.name.toLowerCase() === groupName.toLowerCase());
+        if (!existingGroup) {
+          existingGroup = { name: groupName, values: [] };
+          facets.push(existingGroup);
+        }
+
+        existingGroup.values.push({
+          value: title,
+          label: title,
+          count,
+          href,
+          active,
+        });
       }
     }
 

@@ -80,31 +80,55 @@
           </div>
         </section>
 
-        <!-- View: Catalogs (Milestone M7) -->
+        <!-- View: Catalogs (Milestones M7 & M8) -->
         <section id="view-catalogs" class="view-panel">
           <header class="view-header">
             <h2 class="view-title">OPDS Catalogs</h2>
-            <button id="btn-add-catalog" class="btn btn-primary btn-sm">+ Add Catalog</button>
+            <div class="view-header-actions">
+              <button id="btn-export-opml" class="btn btn-secondary btn-sm" title="Export catalogs as OPML">Export OPML</button>
+              <button id="btn-import-opml" class="btn btn-secondary btn-sm" title="Import catalogs from OPML">Import OPML</button>
+              <input type="file" id="opml-file-input" accept=".opml,.xml" class="hidden" />
+              <button id="btn-add-catalog" class="btn btn-primary btn-sm">+ Add Catalog</button>
+            </div>
           </header>
           <div id="catalog-list" class="catalog-list"></div>
 
           <!-- Feed View (hidden by default) -->
           <div id="feed-view" class="feed-view hidden">
             <header class="feed-header">
-              <div id="feed-breadcrumb" class="feed-breadcrumb"></div>
-              <h3 id="feed-title" class="feed-title">Loading...</h3>
-              <div class="feed-search">
-                <input type="search" id="feed-search-input" placeholder="Search catalog..." aria-label="Search catalog" />
-                <button id="feed-search-btn" class="btn btn-secondary btn-sm">Search</button>
+              <div class="feed-top-bar">
+                <div id="feed-breadcrumb" class="feed-breadcrumb"></div>
+                <div class="feed-view-toggles">
+                  <button id="btn-view-grid" class="btn-toggle active" aria-label="Grid view" title="Grid view">⊞ Grid</button>
+                  <button id="btn-view-list" class="btn-toggle" aria-label="List view" title="List view">☰ List</button>
+                </div>
               </div>
+              <h3 id="feed-title" class="feed-title">Loading...</h3>
+              <div class="feed-search-wrapper">
+                <div class="feed-search">
+                  <input type="search" id="feed-search-input" placeholder="Search catalog..." aria-label="Search catalog" autocomplete="off" />
+                  <button id="feed-search-btn" class="btn btn-secondary btn-sm">Search</button>
+                </div>
+                <div id="feed-search-suggestions" class="search-suggestions hidden"></div>
+              </div>
+              <div id="feed-facets" class="feed-facets hidden"></div>
             </header>
-            <div id="feed-loading" class="feed-loading hidden">Loading...</div>
+            <div id="feed-loading" class="feed-loading hidden">
+              <div class="skeleton-grid">
+                <div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line full"></div><div class="skeleton-line half"></div></div>
+                <div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line full"></div><div class="skeleton-line half"></div></div>
+                <div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line full"></div><div class="skeleton-line half"></div></div>
+                <div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line full"></div><div class="skeleton-line half"></div></div>
+              </div>
+            </div>
             <div id="feed-error" class="feed-error hidden"></div>
-            <div id="feed-list" class="feed-list"></div>
+            <div id="feed-list" class="feed-list view-grid"></div>
+            <div id="feed-scroll-sentinel" class="feed-scroll-sentinel"></div>
             <div id="feed-empty" class="empty-state hidden">
               <div class="empty-icon">📭</div>
               <h2>No Books Found</h2>
               <p>This catalog section appears to be empty.</p>
+              <button id="btn-feed-empty-back" class="btn btn-secondary btn-sm">← Back to Catalogs</button>
             </div>
             <div class="feed-pagination">
               <button id="feed-prev" class="btn btn-secondary btn-sm" disabled>← Prev</button>
@@ -150,6 +174,37 @@
                 </div>
                 <div class="form-actions">
                   <button type="submit" class="btn btn-primary">Add Catalog</button>
+                  <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Auth Required Modal (Milestone M8) -->
+          <div id="feed-auth-modal" class="modal-backdrop hidden">
+            <div class="modal auth-modal">
+              <h3>Authentication Required</h3>
+              <p id="feed-auth-message">This catalog requires authentication to access.</p>
+              <form id="feed-auth-form">
+                <fieldset class="form-group">
+                  <legend>Authentication Type</legend>
+                  <label><input type="radio" name="feedAuthType" value="basic" checked /> Basic Auth</label>
+                  <label><input type="radio" name="feedAuthType" value="bearer" /> Bearer Token</label>
+                </fieldset>
+                <div class="form-group feed-auth-basic">
+                  <label for="feed-auth-username">Username</label>
+                  <input type="text" id="feed-auth-username" name="username" />
+                </div>
+                <div class="form-group feed-auth-basic">
+                  <label for="feed-auth-password">Password</label>
+                  <input type="password" id="feed-auth-password" name="password" />
+                </div>
+                <div class="form-group feed-auth-bearer hidden">
+                  <label for="feed-auth-token">Bearer Token</label>
+                  <input type="text" id="feed-auth-token" name="token" />
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Sign In &amp; Retry</button>
                   <button type="button" class="btn btn-secondary modal-close">Cancel</button>
                 </div>
               </form>

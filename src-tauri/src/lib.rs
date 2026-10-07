@@ -1,12 +1,9 @@
 use std::sync::Arc;
 use tauri_plugin_sql::{Migration, MigrationKind};
-use tauri_plugin_sql::SqlitePool;
 
 pub mod commands;
 pub mod downloads;
 pub mod filesystem;
-
-tauri::generate_context!();
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -46,10 +43,7 @@ pub fn run() {
             commands::cancel_download,
             commands::get_download_status,
             commands::delete_book_file,
-            commands::read_book_file,
-            commands::get_catalogs,
-            commands::add_catalog,
-            commands::delete_catalog
+            commands::read_book_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

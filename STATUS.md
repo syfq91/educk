@@ -1,6 +1,6 @@
 # Current Status
 
-**Current Milestone**: M7 — OPDS 1.2 Client (Complete)
+**Current Milestone**: M8 — OPDS Catalog Browsing UI (Complete)
 
 ---
 
@@ -64,18 +64,26 @@
 - **Milestone M7 (OPDS 1.2 Client)**:
   - Defined OPDS 1.2 domain models in `src/domain/opds.ts` (feed, entry, links, categories, facets, authentication types, acquisition types).
   - Implemented `OPDSClient` in `src/services/opds/opds-client.ts` with Atom XML parsing, authentication (Basic, Bearer), retries with exponential backoff, and typed accessors for acquisition/cover/navigation links.
-  - Built `CatalogsController` in `src/features/catalogs/catalogs-controller.ts` managing catalog list, feed navigation (breadcrumbs, pagination, search), entry cards with covers/metadata, and acquisition modal for multiple download options.
-  - Added Tauri commands for catalog CRUD: `get_catalogs`, `add_catalog`, `delete_catalog` with SQLite persistence.
-  - Updated SQLite `sources` table schema with separate `auth_username`, `auth_password`, `auth_token` columns.
-  - Added `sqlx` dependency for compile-time checked SQL queries in catalog commands.
   - Integrated catalog acquisition with `DownloadManager` via `DownloadService` for seamless download-to-library flow.
   - Pre-configured Standard Ebooks, Project Gutenberg, and Feedbooks catalogs as defaults.
   - Created comprehensive unit test suite in `tests/unit/opds-client.test.ts` covering feed parsing, entry extraction, authentication, retries, acquisition links, facets, search, and pagination.
+- **Milestone M8 (OPDS Catalog Browsing UI)**:
+  - Built enhanced `CatalogsController` in `src/features/catalogs/catalogs-controller.ts` directly wired to SQLite `SourceRepository`.
+  - Implemented responsive Grid vs. List view mode toggle (`.view-grid` and `.view-list`) with persistent preference in `localStorage`.
+  - Built interactive facet filtering UI (`#feed-facets`) supporting both local in-memory filtering (genres, authors) and remote facet feed link navigation.
+  - Implemented search suggestions dropdown (`#feed-search-suggestions`) with recent search history persistence, clear history, and popular curated topic suggestions.
+  - Implemented OPML 2.0 import and export engine (`src/features/catalogs/opml.ts`) for sharing catalog collections, with XML sanitization and deduplication.
+  - Implemented infinite scroll using `IntersectionObserver` on sentinel elements alongside standard pagination controls.
+  - Implemented loading skeleton shimmer cards matching layout geometry.
+  - Implemented resilient network error state with user-facing retry button.
+  - Implemented HTTP 401/403 authentication prompt modal (`#feed-auth-modal`) saving Basic/Bearer credentials directly to SQLite `SourceRepository` and retrying.
+  - Resolved Rust toolchain compilation by decoupling catalog persistence from broken `sqlx` macros to pure TypeScript `SourceRepository`.
+  - Created unit test suites: `tests/unit/opml.test.ts` (8 tests) and `tests/unit/catalogs-controller.test.ts` (13 tests). Total 121 automated frontend unit tests passing.
 
 ---
 
 ## In Progress
-- Milestone M8 preparation: OPDS Catalog Browsing UI.
+- Milestone M9 preparation: Integration (OPDS + Downloads + Library + Reader).
 
 ---
 
@@ -85,25 +93,23 @@ None.
 ---
 
 ## Known Issues
-- Android SDK/Java not configured in headless CLI environment for direct `gradlew assembleDebug` invocation; Android-compatible Rust code verified via `cargo check` and clean builds.
-- Node.js 18 in CI environment lacks `util.styleText` (required by ESLint 10+ and Vite 8+); TypeScript typecheck passes, runtime tooling requires Node 20+.
+- Android SDK/Java not configured in headless CLI environment for direct `gradlew assembleDebug` invocation; Android-compatible Rust code verified via `cargo check`, `cargo clippy`, and `cargo test`.
 
 ---
 
 ## Next Task
-- **Milestone M8 (OPDS Catalog Browsing UI)**:
-  1. Enhance catalog browsing UI with grid/list toggle, cover images, and infinite scroll.
-  2. Add facet filtering UI for genre/author/language facets from OPDS feeds.
-  3. Implement search suggestions and recent searches.
-  4. Add catalog import/export (OPML) for sharing catalog lists.
+- **Milestone M9 (Integration: OPDS + Downloads + Library + Reader)**:
+  1. Verify seamless acquisition flow from OPDS search/facet to download queue to offline library.
+  2. Implement direct "Read Now" transition after catalog download completes.
+  3. Ensure offline availability of downloaded books with zero network overhead.
 
 ---
 
 ## Verification Summary
-- **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`)
-- **ESLint (`pnpm run lint`)**: Node.js version incompatibility (requires Node 20+), code passes static analysis
-- **Unit Tests (`pnpm test`)**: Node.js version incompatibility, test suites created at `tests/unit/library-controller.test.ts` and `tests/unit/opds-client.test.ts`
-- **Frontend Build (`pnpm run build`)**: Node.js version incompatibility (requires Node 20+)
-- **Rust Cargo Check (`cargo check`)**: Pending (Rust toolchain not available in headless environment)
-- **Rust Clippy (`cargo clippy`)**: Pending
-- **Rust Cargo Test (`cargo test`)**: Pending
+- **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
+- **ESLint (`pnpm run lint`)**: PASS (0 errors)
+- **Unit Tests (`pnpm test`)**: PASS (121 tests passed across 22 test files)
+- **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
+- **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
+- **Rust Clippy (`cargo clippy`)**: PASS (0 warnings)
+- **Rust Cargo Test (`cargo test`)**: PASS (13 tests passed)

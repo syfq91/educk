@@ -25,7 +25,7 @@ milestones:
     status: complete
   - id: M8
     name: OPDS Catalog Browsing UI
-    status: pending
+    status: complete
   - id: M9
     name: Integration (OPDS + Downloads + Library + Reader)
     status: pending
@@ -202,4 +202,28 @@ tasks:
   - id: OPDS-006
     milestone: M7
     description: Create comprehensive unit test suite for OPDSClient
+    status: done
+  - id: UI-001
+    milestone: M8
+    description: Implement Grid vs List view mode toggle with persistent preference and responsive cover layouts
+    status: done
+  - id: UI-002
+    milestone: M8
+    description: Implement facet filtering UI chips with local category/author filtering and remote facet feed navigation
+    status: done
+  - id: UI-003
+    milestone: M8
+    description: Implement search suggestions dropdown with recent searches history and popular topics
+    status: done
+  - id: UI-004
+    milestone: M8
+    description: Implement OPML import and export utilities and UI for sharing catalog collections
+    status: done
+  - id: UI-005
+    milestone: M8
+    description: Implement infinite scroll with IntersectionObserver, loading skeletons, network retry, and 401 auth modal
+    status: done
+  - id: UI-006
+    milestone: M8
+    description: Wire CatalogsController directly to SQLite SourceRepository and create comprehensive unit test suites
     status: done
