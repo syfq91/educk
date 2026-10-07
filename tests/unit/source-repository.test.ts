@@ -11,6 +11,7 @@ describe('SqlSourceRepository', () => {
     id: 'src-1',
     name: 'Standard Ebooks',
     url: 'https://standardebooks.org/opds',
+    description: null,
     username: 'reader1',
     authType: 'basic',
     authData: 'secret-token',

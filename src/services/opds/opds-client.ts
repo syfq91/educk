@@ -323,28 +323,38 @@ export class OPDSClient {
 
   private parseFacets(element: Element): OPDSFacet[] {
     const facets: OPDSFacet[] = [];
-    const facetElements = element.querySelectorAll("opds:facetGroup, facetGroup");
+    
+    // Use TreeWalker to find facetGroup elements with opds namespace
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_ELEMENT);
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      const el = node as Element;
+      if (el.localName === "facetGroup" && el.namespaceURI === "http://opds-spec.org/2010/catalog") {
+        const name = el.getAttribute("name") || el.getAttribute("term") || "Unknown";
+        const values: OPDSFacetValue[] = [];
 
-    facetElements.forEach((facetEl) => {
-      const name = facetEl.getAttribute("name") || facetEl.getAttribute("term") || "Unknown";
-      const values: OPDSFacetValue[] = [];
+        // Find facet children
+        const valueWalker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT);
+        let valueNode: Node | null;
+        while ((valueNode = valueWalker.nextNode())) {
+          const valueEl = valueNode as Element;
+          if (valueEl.localName === "facet" && valueEl.namespaceURI === "http://opds-spec.org/2010/catalog") {
+            const value = valueEl.getAttribute("value") || valueEl.getAttribute("term") || "";
+            const countStr = valueEl.getAttribute("count");
+            const count = countStr ? parseInt(countStr, 10) : 0;
+            const label = valueEl.getAttribute("label") || value;
 
-      const valueElements = facetEl.querySelectorAll("opds:facet, facet");
-      valueElements.forEach((valueEl) => {
-        const value = valueEl.getAttribute("value") || valueEl.getAttribute("term") || "";
-        const countStr = valueEl.getAttribute("count");
-        const count = countStr ? parseInt(countStr, 10) : 0;
-        const label = valueEl.getAttribute("label") || value;
-
-        if (value) {
-          values.push({ value, count, label });
+            if (value) {
+              values.push({ value, count, label });
+            }
+          }
         }
-      });
 
-      if (values.length > 0) {
-        facets.push({ name, values });
+        if (values.length > 0) {
+          facets.push({ name, values });
+        }
       }
-    });
+    }
 
     return facets;
   }
@@ -365,15 +375,68 @@ export class OPDSClient {
   }
 
   private parseIntValue(element: Element, tagName: string): number | undefined {
+    // Try direct querySelector first
     const el = element.querySelector(tagName);
-    if (!el) return undefined;
-    const value = parseInt(el.textContent || "", 10);
-    return isNaN(value) ? undefined : value;
+    if (el) {
+      const value = parseInt(el.textContent || "", 10);
+      return isNaN(value) ? undefined : value;
+    }
+    
+    // Try with namespace for opensearch elements
+    if (tagName.startsWith("opensearch:")) {
+      const localName = tagName.replace("opensearch:", "");
+      const elements = element.getElementsByTagNameNS("http://a9.com/-/spec/opensearch/1.1/", localName);
+      if (elements.length > 0) {
+        const value = parseInt(elements[0].textContent || "", 10);
+        return isNaN(value) ? undefined : value;
+      }
+    }
+    
+    // Fallback: use TreeWalker to find opensearch elements
+    if (tagName.startsWith("opensearch:")) {
+      const localName = tagName.replace("opensearch:", "");
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_ELEMENT);
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        const walkerEl = node as Element;
+        if (walkerEl.localName === localName && walkerEl.namespaceURI === "http://a9.com/-/spec/opensearch/1.1/") {
+          const value = parseInt(walkerEl.textContent || "", 10);
+          return isNaN(value) ? undefined : value;
+        }
+      }
+    }
+    
+    return undefined;
   }
 
   private getTextContent(element: Element, tagName: string): string | null {
+    // Handle namespaced elements (e.g., dc:publisher, dcterms:publisher)
     const el = element.querySelector(tagName);
-    return el?.textContent?.trim() || null;
+    if (el) return el.textContent?.trim() || null;
+    
+    // Try with namespace - check for dc: prefix (Dublin Core)
+    // The test uses dc:publisher but the code expects dcterms:publisher
+    if (tagName.startsWith("dcterms:")) {
+      const localName = tagName.replace("dcterms:", "");
+      
+      // Try getElementsByTagNameNS first (most reliable for namespaces)
+      const dcElements = element.getElementsByTagNameNS("http://purl.org/dc/terms/", localName);
+      if (dcElements.length > 0) {
+        return dcElements[0].textContent?.trim() || null;
+      }
+      
+      // Fallback: iterate all descendants and check namespaceURI and localName
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_ELEMENT);
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        const walkerEl = node as Element;
+        if (walkerEl.namespaceURI === "http://purl.org/dc/terms/" && walkerEl.localName === localName) {
+          return walkerEl.textContent?.trim() || null;
+        }
+      }
+    }
+    
+    return null;
   }
 
   private resolveUrl(href: string, baseUrl: string): string {
@@ -406,7 +469,11 @@ export class OPDSClient {
   }
 
   getThumbnailLink(entry: OPDSEntry): OPDSLink | null {
-    return entry.links.find((l) => l.rel === "http://opds-spec.org/image/thumbnail") || null;
+    // First try to find a dedicated thumbnail
+    const thumbnail = entry.links.find((l) => l.rel === "http://opds-spec.org/image/thumbnail");
+    if (thumbnail) return thumbnail;
+    // Fall back to cover image if no dedicated thumbnail
+    return entry.links.find((l) => l.rel === "http://opds-spec.org/image") || null;
   }
 
   getNavigationLinks(feed: OPDSFeed): OPDSLink[] {

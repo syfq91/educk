@@ -1,7 +1,10 @@
 import { defineConfig } from "vite";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 // @ts-expect-error type error without @types/node package
 import process from "node:process";
+
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
@@ -29,14 +32,15 @@ export default defineConfig(() => ({
     },
   },
   test: {
-    environment: "happy-dom",
-    setupFiles: ["./tests/setup.ts"],
+    environment: "node",
+    setupFiles: ["./tests/setup-node.ts"],
     include: ["tests/unit/**/*.test.ts"],
     testTimeout: 10000,
-  },
-  resolve: {
-    alias: {
-      sqlite: path.resolve(__dirname, "tests/mocks/sqlite.ts"),
+    environmentOptions: {
+      node: {
+        // Allow built-in modules like node:sqlite
+        noExternal: [],
+      },
     },
   },
 }));
