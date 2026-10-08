@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:dc="http://purl.org/dc/elements/1.1/"
+      xmlns:opds="http://opds-spec.org/2010/catalog">
+  <id>https://readarr.local/opds</id>
+  <title>Readarr Library OPDS</title>
+  <updated>2026-10-08T00:00:00Z</updated>
+  <generator uri="https://readarr.com" version="0.3.18">Readarr</generator>
+  <link rel="self" href="https://readarr.local/opds" type="application/atom+xml;profile=opds-catalog" />
+  <link rel="search" href="https://readarr.local/opds/search" type="application/opensearchdescription+xml" />
+
+  <entry>
+    <id>urn:readarr:book:501</id>
+    <title>Project Hail Mary</title>
+    <updated>2026-10-08T00:00:00Z</updated>
+    <dc:creator>Andy Weir</dc:creator>
+    <dc:date>2021-05-04</dc:date>
+    <dc:identifier>9780593135204</dc:identifier>
+    <dc:publisher>Ballantine Books</dc:publisher>
+    <summary>A lone astronaut must save the Earth from an extinction-level event.</summary>
+    <category term="Sci-Fi" label="Sci-Fi" />
+    <!-- Tests alternate-as-acquisition heuristic -->
+    <link rel="alternate" href="https://readarr.local/opds/download/501.epub" type="application/epub+zip" title="EPUB Download" />
+    <link rel="http://opds-spec.org/image" href="https://readarr.local/opds/cover/501.jpg" type="image/jpeg" />
+  </entry>
+
+  <entry>
+    <id>urn:readarr:book:502</id>
+    <title>The Martian</title>
+    <updated>2026-10-08T00:00:00Z</updated>
+    <dc:creator>Andy Weir</dc:creator>
+    <dc:date>2014-02-11</dc:date>
+    <summary>Six days ago, astronaut Mark Watney became one of the first people to walk on Mars.</summary>
+    <!-- Tests application/x-epub normalization with rel="alternate" -->
+    <link rel="alternate" href="https://readarr.local/opds/download/502/book.epub" type="application/x-epub" />
+    <link rel="http://opds-spec.org/image" href="https://readarr.local/opds/cover/502.jpg" type="image/jpeg" />
+  </entry>
+</feed>

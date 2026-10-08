@@ -23,12 +23,14 @@ import {
   OPDSLinkType,
   AcquisitionLink,
 } from "../../domain/opds.ts";
+import { normalizeFeed } from "./compatibility.ts";
 
 const DEFAULT_CONFIG: OPDSClientConfig = {
   timeout: 15000,
   userAgent: "educk/0.1.0 (Android; OPDS 1.2 Client)",
   maxRetries: 3,
   retryDelay: 1000,
+  enableCompatibility: true,
 };
 
 export class OPDSClient {
@@ -164,7 +166,7 @@ export class OPDSClient {
       throw new OPDSParseError("Root element is not <feed>", xmlText);
     }
 
-    return {
+    const rawFeed: OPDSFeed = {
       id: this.getTextContent(feed, "id") || feedUrl,
       title: this.getTextContent(feed, "title") || "Untitled Catalog",
       updated: this.getTextContent(feed, "updated") || new Date().toISOString(),
@@ -177,6 +179,12 @@ export class OPDSClient {
       searchLink: this.findLink(feed, "search"),
       facets: this.parseFacets(feed),
     };
+
+    if (this.config.enableCompatibility) {
+      return normalizeFeed(rawFeed, doc, feedUrl);
+    }
+
+    return rawFeed;
   }
 
   private parseAuthors(element: Element): OPDSPerson[] {

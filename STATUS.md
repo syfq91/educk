@@ -1,6 +1,6 @@
 # Current Status
 
-**Current Milestone**: M14 — Adversarial Security Audit (Complete)
+**Current Milestone**: M15 — OPDS Ecosystem & Server Compatibility (Complete)
 
 ---
 
@@ -135,11 +135,19 @@
   - Enforced IPC and protocol scheme boundaries: whitelisted `http://` and `https://` schemes in native `start_download` and OPDS link resolution, dropping `javascript:`, `file:`, `data:`, and unknown protocols. Verified zero exposure of `window.__TAURI__` to book content.
   - Verified OPDS credential privacy: zero logging or exposure of sensitive Basic/Bearer credentials in console logs or application state.
   - Created adversarial security test suite in `tests/unit/security-sandbox.test.ts` (16 tests). Total 213 automated tests passing across 33 test files.
+- **Milestone M15 (Real-World Server Compatibility & Ecosystem Hardening)**:
+  - Architected dedicated OPDS Compatibility Normalization layer in `src/services/opds/compatibility.ts` separating vendor-specific quirks from the standard RFC 4287 / OPDS 1.2 parser.
+  - Implemented automatic Server Profile detection (`calibre-web`, `komga`, `kavita`, `readarr`, `standard`) based on XML generator metadata, URI paths, and custom attributes.
+  - Implemented non-standard MIME type normalization (`x-epub`, `x-epub+zip`, uppercase MIMEs, parameter stripping, and generic octet-stream extension inference).
+  - Implemented link relationship normalization (shorthand `acquisition`, `cover`, `thumbnail` rels, and promoting `rel="alternate"` pointing to EPUB downloads to acquisition links).
+  - Implemented author and Dublin Core fallbacks: extracting `<dc:creator>`, unwrapped `<author>` tags without `<name>`, splitting semicolon-delimited author strings, and extracting `<dc:date>`, `<dc:identifier>`, `<dc:publisher>`, and `<dc:description>`.
+  - Authored authentic XML test fixtures in `fixtures/opds/` for Calibre-Web, Komga, Kavita, and Readarr.
+  - Created unit and integration test suites in `tests/unit/opds-compatibility.test.ts` (18 tests) and `tests/unit/server-compatibility.test.ts` (5 tests). Total 236 automated tests passing across 35 test files.
 
 ---
 
 ## In Progress
-None. Milestone M14 completed.
+None. Milestone M15 completed.
 
 ---
 
@@ -154,17 +162,17 @@ None.
 ---
 
 ## Next Task
-- **Milestone M15 (Acceptance & Polish)**:
-  1. End-to-end user journey verification across OPDS -> Download -> Library -> Reader -> Sync.
-  2. Performance profiling (cold startup, memory footprint during reader sessions).
-  3. Visual polish, touch target ergonomics, accessibility audits, and final release packaging checklist.
+- **Milestone M16 (Performance Engineering & Resource Targets)**:
+  1. Cold startup time benchmarking and optimizations.
+  2. Memory footprint profiling during heavy catalog browsing and reading sessions.
+  3. Spine/chapter pagination lazy-loading verification.
 
 ---
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
 - **ESLint (`pnpm run lint`)**: PASS (0 errors, 13 warnings)
-- **Unit & Integration Tests (`pnpm test`)**: PASS (213 tests passed across 33 test files)
+- **Unit & Integration Tests (`pnpm test`)**: PASS (236 tests passed across 35 test files)
 - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
 - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
 - **Rust Cargo Tests Check (`cargo check --tests`)**: PASS (0 errors)

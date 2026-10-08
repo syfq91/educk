@@ -34,19 +34,19 @@ milestones:
     status: complete
   - id: M11
     name: OPDS Progression 1.0 Synchronization
-    status: pending
+    status: complete
   - id: M12
     name: Reader UX & Settings
-    status: pending
+    status: complete
   - id: M13
     name: Android Lifecycle Reliability
-    status: pending
+    status: complete
   - id: M14
     name: Security Review & Hardening
-    status: pending
+    status: complete
   - id: M15
     name: OPDS Ecosystem Compatibility
-    status: pending
+    status: complete
   - id: M16
     name: Performance Optimization
     status: pending
@@ -370,4 +370,24 @@ tasks:
   - id: SEC-006
     milestone: M14
     description: Credential Protection & Adversarial Security Test Suite (zero credential logging and comprehensive unit/integration test coverage)
+    status: done
+  - id: COMPAT-001
+    milestone: M15
+    description: OPDS Compatibility Normalization Architecture (isolate server heuristics in compatibility.ts separating quirks from standard RFC 4287 parser)
+    status: done
+  - id: COMPAT-002
+    milestone: M15
+    description: Server Profile Detection (identify Calibre-Web, Komga, Kavita, Readarr via generator metadata and URI path conventions)
+    status: done
+  - id: COMPAT-003
+    milestone: M15
+    description: Non-Standard MIME Type & Rel Normalization (normalize x-epub, uppercase MIMEs, parameter stripping, and promote alternate links to acquisitions)
+    status: done
+  - id: COMPAT-004
+    milestone: M15
+    description: Dublin Core & Author Recovery (extract dc:creator, unwrapped author, split composite authors, and fall back to dc:date, dc:identifier, dc:publisher)
+    status: done
+  - id: COMPAT-005
+    milestone: M15
+    description: Real-World Server Fixture Test Suite (authentic XML fixtures for Calibre-Web, Komga, Kavita, Readarr and comprehensive test coverage)
     status: done

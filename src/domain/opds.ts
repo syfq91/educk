@@ -89,6 +89,8 @@ export interface OPDSEntry {
   "dcterms:subject"?: string;
 }
 
+export type ServerProfile = "calibre-web" | "komga" | "kavita" | "readarr" | "standard";
+
 export interface OPDSFeed {
   id: string;
   title: string;
@@ -104,6 +106,8 @@ export interface OPDSFeed {
   searchLink?: OPDSLink;
   // Facets
   facets?: OPDSFacet[];
+  // Server compatibility profile
+  serverProfile?: ServerProfile;
 }
 
 export interface OPDSFacet {
@@ -159,6 +163,7 @@ export interface OPDSClientConfig {
   userAgent: string;
   maxRetries: number;
   retryDelay: number;
+  enableCompatibility?: boolean;
 }
 
 export interface OPDSFetchOptions {

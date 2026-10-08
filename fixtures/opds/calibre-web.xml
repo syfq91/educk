@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:dc="http://purl.org/dc/elements/1.1/"
+      xmlns:opds="http://opds-spec.org/2010/catalog"
+      xmlns:opf="http://www.idpf.org/2007/opf">
+  <id>urn:calibre-web:catalog:root</id>
+  <title>Calibre-Web OPDS Catalog</title>
+  <updated>2026-10-08T00:00:00Z</updated>
+  <generator uri="https://github.com/janeczku/calibre-web" version="0.6.21">Calibre-Web</generator>
+  <link rel="self" href="https://library.local/opds/" type="application/atom+xml;profile=opds-catalog" />
+  <link rel="start" href="https://library.local/opds/" type="application/atom+xml;profile=opds-catalog" />
+  <link rel="search" href="https://library.local/opds/search" type="application/opensearchdescription+xml" />
+
+  <entry>
+    <id>urn:calibre-web:book:101</id>
+    <title>Foundation and Empire</title>
+    <updated>2026-10-08T00:00:00Z</updated>
+    <dc:creator opf:role="aut">Isaac Asimov</dc:creator>
+    <dc:identifier opf:scheme="calibre">101</dc:identifier>
+    <dc:identifier opf:scheme="isbn">9780553293371</dc:identifier>
+    <dc:publisher>Spectra</dc:publisher>
+    <dc:date>1952-04-01T00:00:00+00:00</dc:date>
+    <dc:description>The Foundation series continues with the epic conflict against the Mule.</dc:description>
+    <category term="Science Fiction" label="Science Fiction" />
+    <link rel="http://opds-spec.org/acquisition" href="https://library.local/opds/download/101/epub/Foundation_and_Empire.epub" type="application/x-epub+zip" />
+    <link rel="http://opds-spec.org/image" href="https://library.local/opds/cover/101" type="image/jpeg" />
+    <link rel="http://opds-spec.org/image/thumbnail" href="https://library.local/opds/thumbnail/101" type="image/jpeg" />
+  </entry>
+
+  <entry>
+    <id>urn:calibre-web:book:102</id>
+    <title>Good Omens</title>
+    <updated>2026-10-08T00:00:00Z</updated>
+    <dc:creator>Neil Gaiman; Terry Pratchett</dc:creator>
+    <dc:identifier opf:scheme="calibre">102</dc:identifier>
+    <dc:publisher>Workman Publishing</dc:publisher>
+    <dc:date>1990-05-01T00:00:00+00:00</dc:date>
+    <dc:description>The nice and accurate prophecies of Agnes Nutter, witch.</dc:description>
+    <category term="Fantasy" label="Fantasy" />
+    <!-- Non-standard shorthand acquisition and cover rels -->
+    <link rel="acquisition" href="https://library.local/opds/download/102/epub/Good_Omens.epub" type="application/epub+zip" />
+    <link rel="cover" href="https://library.local/opds/cover/102" type="image/jpeg" />
+    <link rel="thumbnail" href="https://library.local/opds/thumbnail/102" type="image/jpeg" />
+  </entry>
+</feed>

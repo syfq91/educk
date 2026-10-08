@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:opds="http://opds-spec.org/2010/catalog"
+      xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">
+  <id>https://komga.local/opds/v1.2/series/0ABC123/books</id>
+  <title>Komga - Graphic Novels Series</title>
+  <updated>2026-10-08T00:00:00Z</updated>
+  <generator uri="https://komga.org" version="1.8.0">Komga</generator>
+  <link rel="self" href="https://komga.local/opds/v1.2/series/0ABC123/books?page=0&amp;size=20" type="application/atom+xml;profile=opds-catalog" />
+  <link rel="next" href="https://komga.local/opds/v1.2/series/0ABC123/books?page=1&amp;size=20" type="application/atom+xml;profile=opds-catalog" />
+  <opensearch:totalResults>42</opensearch:totalResults>
+  <opensearch:itemsPerPage>20</opensearch:itemsPerPage>
+  <opensearch:startIndex>0</opensearch:startIndex>
+
+  <entry>
+    <id>https://komga.local/opds/v1.2/books/0BOOK1</id>
+    <title>Saga - Chapter 1</title>
+    <updated>2026-10-08T00:00:00Z</updated>
+    <author><name>Brian K. Vaughan</name></author>
+    <summary>An epic space opera fantasy comic book series.</summary>
+    <category term="Comics" label="Comics" />
+    <link rel="http://opds-spec.org/acquisition" href="https://komga.local/opds/v1.2/books/0BOOK1/file" type="application/epub+zip" />
+    <link rel="http://opds-spec.org/image" href="https://komga.local/opds/v1.2/books/0BOOK1/thumbnail" type="image/jpeg" />
+  </entry>
+
+  <entry>
+    <id>https://komga.local/opds/v1.2/books/0BOOK2</id>
+    <title>Saga - Chapter 2</title>
+    <updated>2026-10-08T00:00:00Z</updated>
+    <author><name>Brian K. Vaughan</name></author>
+    <summary>Continuing the journey across space.</summary>
+    <!-- Tests application/octet-stream fallback with .epub URL and legacy image/x-png -->
+    <link rel="http://opds-spec.org/acquisition" href="https://komga.local/opds/v1.2/books/0BOOK2/download.epub" type="application/octet-stream" />
+    <link rel="http://opds-spec.org/image" href="https://komga.local/opds/v1.2/books/0BOOK2/cover.png" type="image/x-png" />
+  </entry>
+</feed>

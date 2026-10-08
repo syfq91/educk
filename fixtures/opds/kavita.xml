@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:opds="http://opds-spec.org/2010/catalog">
+  <id>https://kavita.local/api/opds/series/42</id>
+  <title>Kavita - Light Novels &amp; Books</title>
+  <updated>2026-10-08T00:00:00Z</updated>
+  <generator uri="https://kavitareader.com" version="0.7.1">Kavita</generator>
+  <link rel="self" href="https://kavita.local/api/opds/series/42" type="application/atom+xml;profile=opds-catalog" />
+
+  <entry>
+    <id>https://kavita.local/api/opds/volume/1001</id>
+    <title>Ascendance of a Bookworm - Volume 1</title>
+    <updated>2026-10-08T00:00:00Z</updated>
+    <!-- Tests unwrapped author tag without <name> child element -->
+    <author>Miya Kazuki</author>
+    <summary>A book-loving student is reincarnated in a fantasy world with low literacy.</summary>
+    <category term="Light Novel" label="Light Novel" />
+    <!-- Tests uppercase MIME type -->
+    <link rel="http://opds-spec.org/acquisition" href="https://kavita.local/api/opds/download/1001" type="APPLICATION/EPUB+ZIP" />
+    <link rel="http://opds-spec.org/image" href="https://kavita.local/api/opds/cover/1001" type="image/jpeg" />
+  </entry>
+
+  <entry>
+    <id>https://kavita.local/api/opds/volume/1002</id>
+    <title>Ascendance of a Bookworm - Volume 2</title>
+    <updated>2026-10-08T00:00:00Z</updated>
+    <author>Miya Kazuki</author>
+    <summary>Continuing the paper-making quest.</summary>
+    <!-- Tests MIME type with parameter and legacy pjpeg image -->
+    <link rel="http://opds-spec.org/acquisition" href="https://kavita.local/api/opds/download/1002" type="application/epub+zip; charset=utf-8" />
+    <link rel="http://opds-spec.org/image" href="https://kavita.local/api/opds/cover/1002" type="image/pjpeg" />
+  </entry>
+</feed>
