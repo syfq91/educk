@@ -77,6 +77,7 @@ export class ReaderViewController {
   private settings: ReaderSettings;
   private callbacks: ReaderViewCallbacks;
   private currentBookId?: string;
+  private currentPosition: ReadingPosition | null = null;
   private activeHref: string | null = null;
   private touchStartX = 0;
   private touchStartY = 0;
@@ -136,6 +137,7 @@ export class ReaderViewController {
       });
 
       this.reader.addEventListener("relocate", (position: ReadingPosition) => {
+        this.currentPosition = position;
         const percent = Math.round(position.progression * 100);
         this.elements.progressBadge.textContent = `${percent}%`;
         this.elements.chapter.textContent = position.title || "Reading";
@@ -182,7 +184,7 @@ export class ReaderViewController {
   }
 
   public async close(): Promise<void> {
-    void this.releaseWakeLock();
+    await this.releaseWakeLock();
     if (this.callbacks.onBeforeClose) {
       try {
         await this.callbacks.onBeforeClose();
@@ -195,6 +197,10 @@ export class ReaderViewController {
       this.reader.destroy();
       this.reader = null;
     }
+    this.currentPosition = null;
+    this.currentBookId = undefined;
+    this.activeHref = null;
+    this.elements.tocList.innerHTML = "";
     this.closeTocDrawer();
     this.closeSettingsDrawer();
     this.elements.overlay.classList.add("hidden");
@@ -344,6 +350,41 @@ export class ReaderViewController {
       this.reader.destroy();
       this.reader = null;
     }
+    this.currentPosition = null;
+    this.currentBookId = undefined;
+    this.activeHref = null;
+    this.elements.tocList.innerHTML = "";
+  }
+
+  public getCurrentPosition(): ReadingPosition | null {
+    return this.currentPosition;
+  }
+
+  /**
+   * Preserves and re-anchors active reading position across device orientation changes and window resizes.
+   */
+  public async handleViewportResize(): Promise<void> {
+    if (!this.reader || this.elements.overlay.classList.contains("hidden")) {
+      return;
+    }
+    if (this.currentPosition?.locator) {
+      try {
+        await this.reader.goTo(this.currentPosition.locator);
+      } catch (err) {
+        console.warn("Could not re-anchor locator on viewport resize:", err);
+      }
+    }
+  }
+
+  /**
+   * Handles application resume after backgrounding or screen unlock.
+   */
+  public async handleAppResume(): Promise<void> {
+    if (this.elements.overlay.classList.contains("hidden")) {
+      return;
+    }
+    await this.acquireWakeLock();
+    this.updateClock();
   }
 
   public setBarsVisible(visible: boolean): void {

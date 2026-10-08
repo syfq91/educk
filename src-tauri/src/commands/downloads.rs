@@ -3,7 +3,7 @@ use tauri::{AppHandle, State};
 
 use crate::downloads::models::{DownloadProgressPayload, DownloadRequest, DownloadResult};
 use crate::downloads::DownloadManager;
-use crate::filesystem::paths::delete_book_dir;
+use crate::filesystem::paths::{cleanup_all_orphan_parts, delete_book_dir};
 
 #[tauri::command]
 pub async fn download_book(
@@ -38,5 +38,12 @@ pub async fn delete_book_file(app: AppHandle, book_id: String) -> Result<bool, S
     delete_book_dir(&app, &book_id)
         .await
         .map(|_| true)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn cleanup_orphan_downloads(app: AppHandle) -> Result<usize, String> {
+    cleanup_all_orphan_parts(&app)
+        .await
         .map_err(|e| e.to_string())
 }

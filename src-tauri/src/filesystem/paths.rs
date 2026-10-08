@@ -93,6 +93,31 @@ pub async fn delete_book_dir(app: &tauri::AppHandle, book_id: &str) -> Result<()
     Ok(())
 }
 
+/// Scans the application books directory (`$appData/books/`) and removes any orphan `book.epub.part`
+/// files left behind by ungraceful process termination or crashes, returning the count of cleaned files.
+pub async fn cleanup_all_orphan_parts(app: &tauri::AppHandle) -> Result<usize, PathError> {
+    let books_dir = get_books_dir(app)?;
+    if !tokio::fs::try_exists(&books_dir).await.unwrap_or(false) {
+        return Ok(0);
+    }
+
+    let mut count = 0;
+    if let Ok(mut entries) = tokio::fs::read_dir(&books_dir).await {
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            let path = entry.path();
+            if path.is_dir() {
+                let part_file = path.join("book.epub.part");
+                if tokio::fs::try_exists(&part_file).await.unwrap_or(false)
+                    && tokio::fs::remove_file(&part_file).await.is_ok()
+                {
+                    count += 1;
+                }
+            }
+        }
+    }
+    Ok(count)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

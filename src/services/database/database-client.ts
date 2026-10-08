@@ -60,8 +60,10 @@ export class DatabaseClient implements SqlDatabase {
           },
         };
 
-        // Enable foreign keys on connection
+        // Enable foreign keys and WAL mode on connection for crash safety
         await wrappedDb.execute('PRAGMA foreign_keys = ON;');
+        await wrappedDb.execute('PRAGMA journal_mode = WAL;');
+        await wrappedDb.execute('PRAGMA synchronous = NORMAL;');
         this.db = wrappedDb;
         return wrappedDb;
       } catch (err) {

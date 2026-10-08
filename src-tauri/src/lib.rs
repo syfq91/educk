@@ -43,7 +43,8 @@ pub fn run() {
             commands::cancel_download,
             commands::get_download_status,
             commands::delete_book_file,
-            commands::read_book_file
+            commands::read_book_file,
+            commands::cleanup_orphan_downloads
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

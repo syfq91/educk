@@ -2119,3 +2119,53 @@ html, body {
   flex-shrink: 0;
 }
 
+/* Milestone M13: Corrupted Book Recovery Modal */
+.recovery-modal {
+  max-width: 420px;
+}
+
+.recovery-modal .modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.recovery-modal .modal-icon {
+  font-size: 1.5rem;
+}
+
+.recovery-modal h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #ef4444;
+}
+
+.recovery-modal p {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.recovery-error-detail {
+  font-family: monospace;
+  font-size: 0.75rem;
+  background-color: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  color: #ef4444;
+  margin-bottom: 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.recovery-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+

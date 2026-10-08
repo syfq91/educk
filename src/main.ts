@@ -12,6 +12,7 @@ import {
   type ProgressionSyncManager,
   type ProgressionConflict,
 } from "./services/progression/index.ts";
+import { AppLifecycleManager } from "./services/lifecycle/lifecycle-manager.ts";
 import type { ReaderSettings, ReaderTheme, ReaderFontFamily } from "./domain/reader.ts";
 import type { Book } from "./domain/database.ts";
 
@@ -512,6 +513,16 @@ async function initApp(): Promise<void> {
       backendStatusEl.textContent = "Connected (Rust Tauri 2)";
       backendStatusEl.style.color = "var(--status-success)";
     }
+
+    // Milestone M13: Clean up any orphan .part download files from previous crashes
+    try {
+      const cleaned = await invoke<number>("cleanup_orphan_downloads");
+      if (cleaned > 0) {
+        console.log(`Cleaned up ${cleaned} orphan download part file(s) on startup`);
+      }
+    } catch (cleanupErr) {
+      console.warn("Orphan download cleanup skipped or failed:", cleanupErr);
+    }
   } catch (err) {
     console.warn("Tauri backend not detected or command failed:", err);
     if (backendStatusEl) {
@@ -548,12 +559,27 @@ function setupLibrary(
     return null;
   }
 
+  const recoveryModal = document.querySelector<HTMLElement>("#book-recovery-modal");
+  const recoveryTitle = document.querySelector<HTMLElement>("#recovery-title");
+  const recoveryMessage = document.querySelector<HTMLElement>("#recovery-message");
+  const recoveryErrorDetail = document.querySelector<HTMLElement>("#recovery-error-detail");
+  const btnRecoveryRedownload = document.querySelector<HTMLButtonElement>("#btn-recovery-redownload");
+  const btnRecoveryDelete = document.querySelector<HTMLButtonElement>("#btn-recovery-delete");
+  const btnRecoveryDismiss = document.querySelector<HTMLButtonElement>("#btn-recovery-dismiss");
+
   const elements: LibraryUiElements = {
     container,
     list,
     emptyState,
     sortSelect,
     refreshBtn,
+    recoveryModal,
+    recoveryTitle,
+    recoveryMessage,
+    recoveryErrorDetail,
+    btnRecoveryRedownload,
+    btnRecoveryDelete,
+    btnRecoveryDismiss,
   };
 
   libraryController = new LibraryController(
@@ -579,6 +605,22 @@ function setupLibrary(
       },
       onError: (err) => {
         console.error("Library error:", err);
+      },
+      onRedownloadBook: async (book) => {
+        if (book.acquisitionUrl && downloadController) {
+          console.log("Re-downloading book from acquisition URL:", book.acquisitionUrl);
+          try {
+            await downloadController.startDownload({
+              bookId: book.id,
+              url: book.acquisitionUrl,
+              title: book.title,
+              authors: book.authors ?? undefined,
+              coverUrl: book.coverUrl ?? undefined,
+            });
+          } catch (dlErr) {
+            console.error("Failed to re-download book:", dlErr);
+          }
+        }
       },
     },
   );
@@ -760,36 +802,39 @@ window.addEventListener("DOMContentLoaded", async () => {
   setupCatalogs(dbRepos, downloadService);
   setupSettingsView(dbRepos, readerController);
 
-  // Background retry when network connectivity is regained
-  window.addEventListener("online", () => {
-    if (progressionSyncManager) {
-      void progressionSyncManager.syncQueue();
-    }
-  });
-
-  // Register lifecycle listeners for backgrounding and unmount flushes
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") {
-      void progressManager?.flush().then(() => {
-        if (currentReadingBookId && progressionSyncManager) {
-          void progressionSyncManager.syncBook(currentReadingBookId);
-        }
-      });
-    }
-  });
-  window.addEventListener("pagehide", () => {
-    void progressManager?.flush().then(() => {
+  // Milestone M13 App Lifecycle Manager
+  new AppLifecycleManager({
+    onBackground: async () => {
+      console.log("App entering background / pagehide: flushing progress and sync");
+      await progressManager?.flush();
       if (currentReadingBookId && progressionSyncManager) {
-        void progressionSyncManager.syncBook(currentReadingBookId);
+        await progressionSyncManager.syncBook(currentReadingBookId);
       }
-    });
-  });
-  window.addEventListener("beforeunload", () => {
-    void progressManager?.flush().then(() => {
+    },
+    onFreeze: async () => {
+      console.log("App freezing: flushing progress and sync");
+      await progressManager?.flush();
       if (currentReadingBookId && progressionSyncManager) {
-        void progressionSyncManager.syncBook(currentReadingBookId);
+        await progressionSyncManager.syncBook(currentReadingBookId);
       }
-    });
+    },
+    onResume: async () => {
+      console.log("App resumed to foreground");
+      await readerController?.handleAppResume();
+    },
+    onResize: async () => {
+      console.log("App window resized / orientation changed");
+      await readerController?.handleViewportResize();
+    },
+    onOnline: async () => {
+      console.log("Network online: triggering progression sync queue");
+      if (progressionSyncManager) {
+        await progressionSyncManager.syncQueue();
+      }
+    },
+    onOffline: () => {
+      console.log("Network offline: running in offline-first mode");
+    },
   });
 
   void initApp();

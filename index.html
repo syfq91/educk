@@ -307,6 +307,23 @@
       </div>
     </div>
 
+    <!-- Corrupted Book Recovery Modal (Milestone M13) -->
+    <div id="book-recovery-modal" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="recovery-title">
+      <div class="modal recovery-modal">
+        <div class="modal-header">
+          <span class="modal-icon">⚠️</span>
+          <h3 id="recovery-title">Unable to Open Book</h3>
+        </div>
+        <p id="recovery-message">The book file appears to be damaged or missing and could not be opened.</p>
+        <div id="recovery-error-detail" class="recovery-error-detail hidden"></div>
+        <div class="form-actions recovery-actions">
+          <button id="btn-recovery-redownload" class="btn btn-primary btn-sm hidden">🔄 Re-download Book</button>
+          <button id="btn-recovery-delete" class="btn btn-danger btn-sm">🗑 Remove</button>
+          <button id="btn-recovery-dismiss" class="btn btn-secondary btn-sm modal-close">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Full-screen Production Reader Overlay -->
     <div id="reader-view" class="reader-overlay hidden">
       <header class="reader-header">

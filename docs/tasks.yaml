@@ -323,6 +323,31 @@ tasks:
     milestone: M12
     description: Persist reader typography, margin, and theme preferences to SQLite SettingsRepository and synchronize with app Settings tab
     status: done
+  - id: LC-001
+    milestone: M13
+    description: Mobile OS Lifecycle Management (handle visibilitychange, Page Lifecycle API freeze/resume, pagehide, and beforeunload)
+    status: done
+  - id: LC-002
+    milestone: M13
+    description: SQLite Crash Durability (enable PRAGMA journal_mode = WAL and synchronous = NORMAL for crash resilience)
+    status: done
+  - id: LC-003
+    milestone: M13
+    description: Startup Orphan Sweeping (native Rust cleanup_orphan_downloads command to sweep uncommitted .part files after crash/termination)
+    status: done
+  - id: LC-004
+    milestone: M13
+    description: Screen Rotation & Viewport Resize (active CFI locator re-anchoring on debounced orientation changes to prevent page drift)
+    status: done
+  - id: LC-005
+    milestone: M13
+    description: Corrupted & Missing File Recovery UX (interactive modal prompt with Re-download via acquisition URL, Remove, and dismiss)
+    status: done
+  - id: LC-006
+    milestone: M13
+    description: Memory Pressure & Network Flapping Resilience (lifecycle memory cleanup hooks and non-blocking offline/online sync queue retry)
+    status: done
+
 
 
 

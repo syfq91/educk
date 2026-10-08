@@ -20,11 +20,19 @@ export interface LibraryUiElements {
   emptyState: HTMLElement;
   sortSelect: HTMLSelectElement;
   refreshBtn: HTMLButtonElement;
+  recoveryModal?: HTMLElement | null;
+  recoveryTitle?: HTMLElement | null;
+  recoveryMessage?: HTMLElement | null;
+  recoveryErrorDetail?: HTMLElement | null;
+  btnRecoveryRedownload?: HTMLButtonElement | null;
+  btnRecoveryDelete?: HTMLButtonElement | null;
+  btnRecoveryDismiss?: HTMLButtonElement | null;
 }
 
 export interface LibraryControllerCallbacks {
   onOpenBook?: (bookId: string) => void;
   onError?: (error: Error) => void;
+  onRedownloadBook?: (book: Book) => void;
 }
 
 type SortOption = "last_opened" | "title" | "downloaded_at";
@@ -220,9 +228,10 @@ export class LibraryController {
   }
 
   async openBook(bookId: string): Promise<void> {
+    let book: Book | null = null;
     try {
       // Find book in database
-      const book = await this.bookRepo.findById(bookId);
+      book = await this.bookRepo.findById(bookId);
       if (!book) {
         throw new Error(`Book not found in database: ${bookId}`);
       }
@@ -251,9 +260,93 @@ export class LibraryController {
         await this.markBookMissing(bookId);
       }
 
+      if (book) {
+        this.showRecoveryModal(book, error);
+      }
+
       this.callbacks.onError?.(error);
       throw error;
     }
+  }
+
+  showRecoveryModal(book: Book, error: Error): void {
+    const modal =
+      this.elements.recoveryModal ?? document.querySelector<HTMLElement>("#book-recovery-modal");
+    if (!modal) return;
+
+    const titleEl =
+      this.elements.recoveryTitle ?? modal.querySelector<HTMLElement>("#recovery-title");
+    const messageEl =
+      this.elements.recoveryMessage ?? modal.querySelector<HTMLElement>("#recovery-message");
+    const detailEl =
+      this.elements.recoveryErrorDetail ??
+      modal.querySelector<HTMLElement>("#recovery-error-detail");
+    const redownloadBtn =
+      this.elements.btnRecoveryRedownload ??
+      modal.querySelector<HTMLButtonElement>("#btn-recovery-redownload");
+    const deleteBtn =
+      this.elements.btnRecoveryDelete ??
+      modal.querySelector<HTMLButtonElement>("#btn-recovery-delete");
+    const dismissBtn =
+      this.elements.btnRecoveryDismiss ??
+      modal.querySelector<HTMLButtonElement>("#btn-recovery-dismiss");
+
+    const isMissing =
+      error.message.includes("not found") || error.message.includes("ENOENT");
+
+    if (titleEl) {
+      titleEl.textContent = isMissing ? "Book File Missing" : "Corrupted or Unreadable Book";
+    }
+
+    if (messageEl) {
+      messageEl.textContent = isMissing
+        ? `The file for "${book.title}" was not found on your device. It may have been moved or deleted.`
+        : `"${book.title}" could not be opened because the file is corrupted or unreadable.`;
+    }
+
+    if (detailEl) {
+      detailEl.textContent = error.message;
+      detailEl.classList.remove("hidden");
+    }
+
+    const closeModal = () => {
+      modal.classList.add("hidden");
+    };
+
+    if (redownloadBtn) {
+      if (book.acquisitionUrl) {
+        redownloadBtn.classList.remove("hidden");
+        redownloadBtn.onclick = () => {
+          closeModal();
+          this.callbacks.onRedownloadBook?.(book);
+        };
+      } else {
+        redownloadBtn.classList.add("hidden");
+        redownloadBtn.onclick = null;
+      }
+    }
+
+    if (deleteBtn) {
+      deleteBtn.onclick = async () => {
+        closeModal();
+        await this.deleteBook(book.id, true);
+      };
+    }
+
+    if (dismissBtn) {
+      dismissBtn.onclick = () => {
+        closeModal();
+      };
+    }
+
+    // Dismiss on backdrop click
+    modal.onclick = (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    };
+
+    modal.classList.remove("hidden");
   }
 
   private async readBookFile(localPath: string): Promise<ArrayBuffer> {
@@ -261,8 +354,8 @@ export class LibraryController {
     return invoke<ArrayBuffer>("read_book_file", { path: localPath });
   }
 
-  async deleteBook(bookId: string): Promise<void> {
-    if (!confirm("Delete this book from your library? This cannot be undone.")) {
+  async deleteBook(bookId: string, skipConfirm = false): Promise<void> {
+    if (!skipConfirm && !confirm("Delete this book from your library? This cannot be undone.")) {
       return;
     }
 

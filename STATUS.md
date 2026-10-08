@@ -1,6 +1,6 @@
 # Current Status
 
-**Current Milestone**: M12 — Reader UX & Settings (Complete)
+**Current Milestone**: M13 — Android Lifecycle & Reliability (Complete)
 
 ---
 
@@ -119,11 +119,19 @@
   - Added true pitch-black AMOLED theme (`#000000`, `theme-amoled`) for maximum OLED battery savings on mobile displays.
   - Added comprehensive Reader Preferences panel to the global Settings tab, synchronizing defaults with the reader drawer and SQLite `SettingsRepository` in real-time.
   - Created unit test suite `tests/unit/reader-ux.test.ts` (8 tests) and integration test suite `tests/unit/m12-integration.test.ts` (2 tests). Total 180 automated tests passing across 30 test files.
+- **Milestone M13 (Android Lifecycle & Reliability)**:
+  - Built comprehensive `AppLifecycleManager` in `src/services/lifecycle/lifecycle-manager.ts` managing `visibilitychange`, Page Lifecycle API `freeze` and `resume`, `pagehide`, `beforeunload`, `online`, `offline`, debounced resize/orientation change, and memory pressure cleanup.
+  - Hardened SQLite database connection initialization in `src/services/database/database-client.ts` with `PRAGMA foreign_keys = ON;`, `PRAGMA journal_mode = WAL;`, and `PRAGMA synchronous = NORMAL;` for crash resilience against sudden process death.
+  - Implemented atomic crash recovery in Rust: native `cleanup_all_orphan_parts` path helper and `cleanup_orphan_downloads` Tauri IPC command, swept automatically on application bootstrap in `initApp()`.
+  - Implemented viewport orientation and resize re-anchoring in `ReaderViewController`: debounced orientation change actively re-anchors to the current CFI locator via `reader.goTo(...)` to prevent reader page drift.
+  - Implemented foreground resume handling in `ReaderViewController`: re-acquires screen wake lock and refreshes status bar indicators.
+  - Built `#book-recovery-modal` in `index.html`, `src/styles.css`, and `LibraryController` with tailored diagnostics for missing (`ENOENT`) or corrupted files, offering "🔄 Re-download Book" via OPDS acquisition URL, "🗑 Remove" from library, or dismiss.
+  - Created unit test suites `tests/unit/lifecycle-manager.test.ts` (10 tests), `tests/unit/corrupted-file-recovery.test.ts` (6 tests), and integration test suite `tests/unit/m13-integration.test.ts` (5 tests). Total 201 automated tests passing across 33 test files.
 
 ---
 
 ## In Progress
-None. Milestone M12 completed.
+None. Milestone M13 completed.
 
 ---
 
@@ -138,18 +146,21 @@ None.
 ---
 
 ## Next Task
-- **Final Polish & Release**:
-  1. Performance profiling and memory audit.
-  2. Security audit (CSP, sandbox permissions, path validation).
-  3. Release documentation and release build verification.
+- **Milestone M14 (Adversarial Security Audit)**:
+  1. Audit and mitigate path traversal attacks.
+  2. Audit and mitigate ZIP bomb and decompression attacks.
+  3. Audit and mitigate XML External Entity (XXE) vulnerabilities in OPDS and EPUB container parsers.
+  4. Validate CSP and script suppression in WebView sandboxes.
+  5. Validate IPC boundary and Tauri capability isolation against untrusted book content.
+  6. Validate OPDS credential protection and storage security.
 
 ---
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
-  - **ESLint (`pnpm run lint`)**: PASS (0 errors, 13 warnings)
-  - **Unit & Integration Tests (`pnpm test`)**: PASS (180 tests passed across 30 test files)
-  - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
-  - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
-  - **Rust Clippy (`cargo clippy`)**: PASS (0 warnings)
+- **ESLint (`pnpm run lint`)**: PASS (0 errors, 13 warnings)
+- **Unit & Integration Tests (`pnpm test`)**: PASS (201 tests passed across 33 test files)
+- **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
+- **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
+- **Rust Clippy (`cargo clippy`)**: PASS (0 warnings)
 
