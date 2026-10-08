@@ -275,5 +275,30 @@ tasks:
     milestone: M10
     description: Create comprehensive unit and integration test suites for debounced progress tracking
     status: done
+  - id: SYNC-001
+    milestone: M11
+    description: Define OPDS Progression 1.0 domain interfaces, contracts, conflict models, and client interfaces
+    status: done
+  - id: SYNC-002
+    milestone: M11
+    description: Implement ProgressionClient supporting Readium JSON schema, GET/PUT endpoints, authentication, and retries
+    status: done
+  - id: SYNC-003
+    milestone: M11
+    description: Implement ProgressionSyncManager with device ID tracking, endpoint registration, and SQLite sync_state queue
+    status: done
+  - id: SYNC-004
+    milestone: M11
+    description: Implement linear conflict resolution matrix (timestamp comparison, cold open pull vs active session prompt)
+    status: done
+  - id: SYNC-005
+    milestone: M11
+    description: Integrate reader conflict prompt banner with interactive resolution and catalog progression link discovery
+    status: done
+  - id: SYNC-006
+    milestone: M11
+    description: Create comprehensive unit and integration test suites covering ProgressionClient, sync manager, and offline queue
+    status: done
+
 
 

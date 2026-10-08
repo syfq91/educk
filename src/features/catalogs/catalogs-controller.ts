@@ -65,6 +65,7 @@ export interface CatalogsControllerCallbacks {
   onDownloadStarted?: (bookId: string) => void;
   onDownloadCompleted?: (book: Book) => void;
   onBookAcquired?: (book: Book) => void;
+  onProgressionDiscovered?: (bookId: string, progressionUrl: string) => void;
   onReadNow?: (bookId: string) => void;
   onError?: (error: Error) => void;
   onCatalogsChanged?: (catalogs: OPDSCatalog[]) => void;
@@ -1443,6 +1444,12 @@ export class CatalogsController {
       if (entry.id) {
         this.downloadedRemoteIds.add(entry.id);
       }
+
+      const progressionLink = this.opdsClient.getProgressionLink(entry);
+      if (progressionLink?.href) {
+        this.callbacks.onProgressionDiscovered?.(bookId, progressionLink.href);
+      }
+
       this.activeDownloads.delete(bookId);
       this.updateCardUi(bookId);
 
@@ -1517,7 +1524,7 @@ export class CatalogsController {
 
   private showView(mode: "catalogs" | "feed"): void {
     const isCatalogs = mode === "catalogs";
-    this.elements.catalogList.closest("section")!.classList.toggle("hidden", false);
+    this.elements.catalogList.closest("section")?.classList.toggle("hidden", false);
     this.elements.catalogList.classList.toggle("hidden", !isCatalogs);
     this.elements.feedView.classList.toggle("hidden", isCatalogs);
   }

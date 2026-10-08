@@ -274,6 +274,21 @@
         <div id="reader-progress-badge" class="reader-progress-badge">0%</div>
       </header>
 
+      <!-- Progression Sync Conflict Banner (Milestone M11) -->
+      <div id="reader-conflict-banner" class="reader-conflict-banner hidden" role="alert">
+        <div class="conflict-content">
+          <span class="conflict-icon">🔄</span>
+          <div class="conflict-text">
+            <div class="conflict-title">Sync Conflict Detected</div>
+            <div id="conflict-desc" class="conflict-desc">Newer reading progress found from another device.</div>
+          </div>
+        </div>
+        <div class="conflict-actions">
+          <button id="btn-conflict-apply-remote" class="btn btn-primary btn-sm">Jump to Latest</button>
+          <button id="btn-conflict-keep-local" class="btn btn-secondary btn-sm">Keep Local</button>
+        </div>
+      </div>
+
       <div class="reader-canvas">
         <!-- 3-Zone Tap Navigation for Immersive Reading -->
         <div class="reader-tap-zones">

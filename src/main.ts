@@ -6,11 +6,19 @@ import { DatabaseClient, createRepositories, type DatabaseRepositories } from ".
 import { TauriDownloadService } from "./services/downloads/index.ts";
 import { DownloadController, type DownloadUiElements } from "./features/downloads/download-controller.ts";
 import { LocalProgressManager } from "./services/progress/index.ts";
+import {
+  createProgressionClient,
+  createProgressionSyncManager,
+  type ProgressionSyncManager,
+  type ProgressionConflict,
+} from "./services/progression/index.ts";
 import type { ReaderSettings } from "./domain/reader.ts";
 import type { Book } from "./domain/database.ts";
 
 let readerController: ReaderViewController | null = null;
 let repos: DatabaseRepositories | null = null;
+let progressionSyncManager: ProgressionSyncManager | null = null;
+let currentReadingBookId: string | null = null;
 
 // Initialize SQLite database repositories
 async function initDatabase(): Promise<DatabaseRepositories | null> {
@@ -50,8 +58,51 @@ function setupNavigation(): void {
   });
 }
 
+// Progression Conflict Prompt Banner (Milestone M11)
+function setupConflictBanner(syncManager: ProgressionSyncManager): void {
+  const banner = document.querySelector<HTMLElement>("#reader-conflict-banner");
+  const descEl = document.querySelector<HTMLElement>("#conflict-desc");
+  const applyBtn = document.querySelector<HTMLButtonElement>("#btn-conflict-apply-remote");
+  const keepBtn = document.querySelector<HTMLButtonElement>("#btn-conflict-keep-local");
+
+  if (!banner || !descEl || !applyBtn || !keepBtn) return;
+
+  applyBtn.onclick = async () => {
+    if (!currentReadingBookId) return;
+    const targetBookId = currentReadingBookId;
+    banner.classList.add("hidden");
+    const result = await syncManager.resolveConflict(targetBookId, "apply_remote");
+    if (result.action === "pulled" && repos && currentReadingBookId === targetBookId) {
+      const updated = await repos.progress.findByBookId(targetBookId);
+      if (updated?.locator) {
+        await readerController?.goTo(updated.locator);
+      }
+    }
+  };
+
+  keepBtn.onclick = async () => {
+    if (!currentReadingBookId) return;
+    const targetBookId = currentReadingBookId;
+    banner.classList.add("hidden");
+    await syncManager.resolveConflict(targetBookId, "keep_local");
+  };
+}
+
+function showConflictBanner(conflict: ProgressionConflict): void {
+  const banner = document.querySelector<HTMLElement>("#reader-conflict-banner");
+  const descEl = document.querySelector<HTMLElement>("#conflict-desc");
+  if (!banner || !descEl) return;
+
+  const pct = Math.round(conflict.remoteProgression * 100);
+  descEl.textContent = `Newer reading progress found from another device (${pct}%).`;
+  banner.classList.remove("hidden");
+}
+
 // Production Reader View Controller Initialization
-function setupReader(progressManager: LocalProgressManager | null): void {
+function setupReader(
+  progressManager: LocalProgressManager | null,
+  syncManager: ProgressionSyncManager | null = null,
+): void {
   const overlay = document.querySelector<HTMLElement>("#reader-view");
   const mount = document.querySelector<HTMLElement>("#reader-mount");
   const backBtn = document.querySelector<HTMLButtonElement>("#reader-btn-back");
@@ -172,6 +223,12 @@ function setupReader(progressManager: LocalProgressManager | null): void {
         }
       },
       onClose: () => {
+        const closingBookId = currentReadingBookId;
+        currentReadingBookId = null;
+        document.querySelector("#reader-conflict-banner")?.classList.add("hidden");
+        if (closingBookId && syncManager) {
+          void syncManager.syncBook(closingBookId);
+        }
         void libraryController?.loadBooks?.();
       },
     },
@@ -191,6 +248,7 @@ function setupReader(progressManager: LocalProgressManager | null): void {
   btnEpub3?.addEventListener("click", async () => {
     try {
       const bookId = "sample-epub3";
+      currentReadingBookId = bookId;
       if (repos) {
         const existing = await repos.books.findById(bookId);
         if (!existing) {
@@ -226,6 +284,7 @@ function setupReader(progressManager: LocalProgressManager | null): void {
   btnEpub2?.addEventListener("click", async () => {
     try {
       const bookId = "sample-epub2";
+      currentReadingBookId = bookId;
       if (repos) {
         const existing = await repos.books.findById(bookId);
         if (!existing) {
@@ -423,6 +482,17 @@ function setupLibrary(
     {
       onOpenBook: (bookId) => {
         console.log("Opened book from library:", bookId);
+        currentReadingBookId = bookId;
+        if (progressionSyncManager) {
+          void progressionSyncManager.syncBook(bookId, { isColdOpen: true }).then(async (res) => {
+            if (res.action === "pulled" && repos && currentReadingBookId === bookId) {
+              const updated = await repos.progress.findByBookId(bookId);
+              if (updated?.locator) {
+                await readerController?.goTo(updated.locator);
+              }
+            }
+          });
+        }
       },
       onError: (err) => {
         console.error("Library error:", err);
@@ -554,6 +624,11 @@ function setupCatalogs(
         console.log("Opening book from catalog:", bookId);
         void libraryController?.openBook(bookId);
       },
+      onProgressionDiscovered: (bookId, progressionUrl) => {
+        if (progressionSyncManager) {
+          void progressionSyncManager.registerProgressionUrl(bookId, progressionUrl);
+        }
+      },
       onError: (err) => {
         console.error("Catalogs error:", err);
       },
@@ -566,10 +641,36 @@ function setupCatalogs(
 window.addEventListener("DOMContentLoaded", async () => {
   setupNavigation();
   const dbRepos = await initDatabase();
+
+  const progressionClient = createProgressionClient();
+  if (dbRepos) {
+    progressionSyncManager = createProgressionSyncManager({
+      progressRepo: dbRepos.progress,
+      syncStateRepo: dbRepos.syncState,
+      settingsRepo: dbRepos.settings,
+      bookRepo: dbRepos.books,
+      sourceRepo: dbRepos.sources,
+      client: progressionClient,
+      callbacks: {
+        onConflictPrompt: (conflict) => {
+          showConflictBanner(conflict);
+        },
+      },
+    });
+    setupConflictBanner(progressionSyncManager);
+  }
+
   const progressManager = dbRepos
-    ? new LocalProgressManager(dbRepos.progress, dbRepos.books, { debounceMs: 1000 })
+    ? new LocalProgressManager(dbRepos.progress, dbRepos.books, {
+        debounceMs: 1000,
+        onProgressSaved: (update) => {
+          if (progressionSyncManager) {
+            void progressionSyncManager.syncBook(update.bookId, { isSessionActive: true });
+          }
+        },
+      })
     : null;
-  setupReader(progressManager);
+  setupReader(progressManager, progressionSyncManager);
   const downloadService = new TauriDownloadService();
   setupDownloadManager(dbRepos, downloadService);
   setupLibrary(dbRepos, readerController, {
@@ -604,17 +705,36 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
   setupCatalogs(dbRepos, downloadService);
 
+  // Background retry when network connectivity is regained
+  window.addEventListener("online", () => {
+    if (progressionSyncManager) {
+      void progressionSyncManager.syncQueue();
+    }
+  });
+
   // Register lifecycle listeners for backgrounding and unmount flushes
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
-      void progressManager?.flush();
+      void progressManager?.flush().then(() => {
+        if (currentReadingBookId && progressionSyncManager) {
+          void progressionSyncManager.syncBook(currentReadingBookId);
+        }
+      });
     }
   });
   window.addEventListener("pagehide", () => {
-    void progressManager?.flush();
+    void progressManager?.flush().then(() => {
+      if (currentReadingBookId && progressionSyncManager) {
+        void progressionSyncManager.syncBook(currentReadingBookId);
+      }
+    });
   });
   window.addEventListener("beforeunload", () => {
-    void progressManager?.flush();
+    void progressManager?.flush().then(() => {
+      if (currentReadingBookId && progressionSyncManager) {
+        void progressionSyncManager.syncBook(currentReadingBookId);
+      }
+    });
   });
 
   void initApp();

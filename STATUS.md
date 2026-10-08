@@ -1,6 +1,6 @@
 # Current Status
 
-**Current Milestone**: M10 — Local Reading Progress (Complete)
+**Current Milestone**: M11 — OPDS Progression 1.0 Synchronization (Complete)
 
 ---
 
@@ -99,11 +99,25 @@
   - Ensured `books.last_opened_at` is updated in SQLite in lockstep with reading progress saves to keep library sorting by "Recently Read" accurate.
   - Verified strictly offline, zero-network reading progress tracking.
   - Created unit test suite `tests/unit/progress-manager.test.ts` (9 tests) and integration test suite `tests/unit/m10-integration.test.ts` (4 tests). Total 140 automated tests passing across 25 test files.
+- **Milestone M11 (OPDS Progression 1.0 Synchronization)**:
+  - Defined OPDS Progression 1.0 domain types, contracts, Readium-compatible JSON schemas, and conflict models in `src/domain/progression.ts`.
+  - Added `"http://opds-spec.org/progression"` link relation to `OPDSLinkRel` and added `getProgressionLink(entry)` helper in `OPDSClient`.
+  - Implemented `ProgressionClient` in `src/services/progression/progression-client.ts` handling REST `GET` (returns payload or `null` on 404) and `PUT` (200/204), device ID tracking headers (`X-Device-Id`), auth credential injection (Basic/Bearer), and exponential backoff retry on HTTP 5xx errors.
+  - Implemented `ProgressionSyncManager` in `src/services/progression/progression-sync-manager.ts` maintaining persistent device identifiers (`educk-android-<uuid>`), OPDS progression endpoint registry in `SettingsRepository`, and SQLite `sync_state` offline queue (`idle`, `pending`, `syncing`, `synced`, `conflict`, `failed`, `error`).
+  - Implemented robust linear conflict resolution based on ISO 8601 UTC `modified` timestamps:
+    - Server empty: pushes local progress.
+    - Local empty: pulls remote progress.
+    - Cold open (`isColdOpen: true`): silently applies newer remote progress without UI interruption.
+    - Active reading session: detects concurrent changes and presents interactive conflict prompt.
+  - Built `#reader-conflict-banner` in reader view allowing one-click interactive resolution: "Jump to Latest" (`apply_remote` with reader repositioning) or "Keep Local" (`keep_local` pushing to server with updated timestamp).
+  - Wired background sync triggers in `src/main.ts`: cold-open background sync on book open from library bookshelf, debounced progress push during reading, reader close/backgrounding sync, and global `online` event queue flushing (`syncQueue()`).
+  - Guaranteed strict non-blocking invariant: reading page turns and reader UI navigation never await or block on network I/O.
+  - Created unit test suites `tests/unit/progression-client.test.ts` (12 tests), `tests/unit/progression-sync-manager.test.ts` (13 tests), and integration test suite `tests/unit/m11-integration.test.ts` (5 tests). Total 170 automated tests passing across 28 test files.
 
 ---
 
 ## In Progress
-- Milestone M11 preparation: OPDS Progression 1.0 Synchronization.
+None. Milestone M11 completed.
 
 ---
 
@@ -118,17 +132,18 @@ None.
 ---
 
 ## Next Task
-- **Milestone M11 (OPDS Progression 1.0 Synchronization)**:
-  1. Implement `ProgressionClient` supporting `GET` and `PUT` endpoints.
-  2. Maintain local synchronization queue for offline operations and network flapping.
-  3. Implement linear conflict resolution (timestamp comparison matrix).
+- **Milestone M12 (Production Hardening & Release Preparation)**:
+  1. End-to-end regression validation.
+  2. Performance profiling and memory audit.
+  3. Security audit (CSP, sandbox permissions, path validation).
+  4. Final release documentation and Android release packaging.
 
 ---
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
 - **ESLint (`pnpm run lint`)**: PASS (0 errors, 13 warnings)
-- **Unit & Integration Tests (`pnpm test`)**: PASS (140 tests passed across 25 test files)
+- **Unit & Integration Tests (`pnpm test`)**: PASS (170 tests passed across 28 test files)
 - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
 - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
 - **Rust Clippy (`cargo clippy`)**: PASS (0 warnings)

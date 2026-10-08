@@ -180,6 +180,12 @@ export class ReaderViewController {
     this.callbacks.onClose?.();
   }
 
+  public async goTo(locator: string): Promise<void> {
+    if (this.reader) {
+      await this.reader.goTo(locator);
+    }
+  }
+
   public applySettings(newSettings: Partial<ReaderSettings>): void {
     this.settings = { ...this.settings, ...newSettings };
     this.syncSettingsUi();

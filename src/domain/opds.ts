@@ -24,6 +24,7 @@ export type OPDSLinkRel =
   | "http://opds-spec.org/acquisition/loan"
   | "http://opds-spec.org/image"
   | "http://opds-spec.org/image/thumbnail"
+  | "http://opds-spec.org/progression"
   | "http://opds-spec.org/sort/popular"
   | "http://opds-spec.org/sort/new"
   | "http://opds-spec.org/sort/relevance"

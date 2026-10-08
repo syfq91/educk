@@ -522,6 +522,10 @@ export class OPDSClient {
   getSearchLink(feed: OPDSFeed): OPDSLink | null {
     return feed.searchLink || feed.links.find((l) => l.rel === "search") || null;
   }
+
+  getProgressionLink(entry: OPDSEntry): OPDSLink | null {
+    return entry.links.find((l) => l.rel === "http://opds-spec.org/progression") || null;
+  }
 }
 
 export function createOPDSClient(config?: Partial<OPDSClientConfig>): OPDSClient {
