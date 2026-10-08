@@ -1,6 +1,10 @@
 import { vi, beforeEach } from "vitest";
 import { Window } from "happy-dom";
 
+// Preserve Node's native fetch before happy-dom setup so E2E tests can use real HTTP
+const originalNativeFetch = globalThis.fetch;
+(global as unknown as { __NATIVE_FETCH__?: typeof fetch }).__NATIVE_FETCH__ = originalNativeFetch;
+
 // Create a global window object with happy-dom
 const window = new Window({
   url: "http://localhost",
@@ -79,6 +83,7 @@ global.confirm = vi.fn(() => true);
 
 // Mock fetch for OPDS tests
 const mockFetch = vi.fn();
+(global as unknown as { __MOCK_FETCH__?: typeof mockFetch }).__MOCK_FETCH__ = mockFetch;
 global.fetch = mockFetch;
 
 // Reset mocks before each test

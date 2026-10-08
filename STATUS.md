@@ -153,11 +153,27 @@
   - Streaming memory architecture: verified native Rust `DownloadEngine` directly streams chunks to disk via `reqwest::Response::bytes_stream()` (< 20 MB download RAM ceiling) and `foliate-js` ZipReader lazy spine decompression (< 50 MB reader RAM ceiling).
   - Authored comprehensive documentation in `docs/performance.md`.
   - Created performance unit test suite in `tests/unit/performance.test.ts` (7 tests). Total 243 automated tests passing across 36 test files.
+- **Milestone M17 (End-to-End Golden Path Tests)**:
+  - Built standalone Fake OPDS 1.2 & Progression 1.0 Server in `tests/e2e/opds-server/fake-opds-server.ts` running on native `node:http` with ephemeral port assignment (`127.0.0.1:0`), serving Atom navigation/acquisition feeds, binary EPUB streaming from fixtures, and Readium Progression REST endpoints with fault injection (offline toggle, transient HTTP 500 error counts).
+  - Executed automated 10-step Golden Path lifecycle integration test suite in `tests/e2e/golden-path.test.ts`:
+    1. Fresh install (clean SQLite migrations via `001_initial_schema.sql`).
+    2. Add fake OPDS catalog endpoint into `SqlSourceRepository`.
+    3. Browse navigation & acquisition feeds via `OPDSClient`.
+    4. Download test EPUB with atomic verification and commit into `SqlBookRepository`.
+    5. Open book in reader with offline readiness.
+    6. Navigate to Chapter 3 (CFI captured, 35% progression in `SqlProgressRepository`).
+    7. Background app & process termination simulation (flush state, close DB).
+    8. Reopen app offline (verify library displays book with 35% progress and Chapter 3 title).
+    9. Reopen book offline (verify exact CFI restoration to Chapter 3 without network calls).
+    10. Restore network & verify progression synchronization (`PUT` to fake server with `X-Device-Id` and `sync_state` update to `synced`).
+  - Implemented and verified edge-case resilience: transient HTTP 500 server error recovery with exponential backoff and multi-device remote progression conflict resolution.
+  - Authored comprehensive documentation in `docs/e2e-testing.md`.
+  - Total 246 automated tests passing across 37 test files.
 
 ---
 
 ## In Progress
-None. All planned milestones (M1–M16) are complete!
+None. All 17 milestones (M0–M17) are 100% complete! Production Release Gate passed.
 
 ---
 
@@ -172,16 +188,17 @@ None.
 ---
 
 ## Next Task
-Project complete. Maintenance, platform packaging, and distribution release.
+v1.0.0 Production Release & Packaging.
 
 ---
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
 - **ESLint (`pnpm run lint`)**: PASS (0 errors, 13 warnings)
-- **Unit & Integration Tests (`pnpm test`)**: PASS (243 tests passed across 36 test files)
+- **Unit & Integration Tests (`pnpm test`)**: PASS (246 tests passed across 37 test files)
 - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
 - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
 - **Rust Cargo Tests Check (`cargo check --tests`)**: PASS (0 errors)
 - **Rust Clippy (`cargo clippy -- -D warnings`)**: PASS (0 warnings)
+
 

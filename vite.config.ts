@@ -34,7 +34,7 @@ export default defineConfig(() => ({
   test: {
     environment: "node",
     setupFiles: ["./tests/setup-node.ts"],
-    include: ["tests/unit/**/*.test.ts"],
+    include: ["tests/unit/**/*.test.ts", "tests/e2e/**/*.test.ts"],
     testTimeout: 10000,
     environmentOptions: {
       node: {

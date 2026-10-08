@@ -411,3 +411,16 @@ tasks:
     milestone: M16
     description: Memory Architecture & Resource Budgets (< 20 MB download RAM via Rust chunked stream; < 50 MB reader RAM via lazy spine decompression)
     status: done
+  - id: E2E-001
+    milestone: M17
+    description: Fake OPDS 1.2 & Progression 1.0 Server Implementation (ephemeral port node:http server with Atom feeds, EPUB binary streaming, and Readium Progression REST)
+    status: done
+  - id: E2E-002
+    milestone: M17
+    description: Automated End-to-End Golden Path Test Suite (10-step full lifecycle integration workflow from clean install to offline reading and cloud sync)
+    status: done
+  - id: E2E-003
+    milestone: M17
+    description: Offline / Network Flapping & Conflict Resilience in E2E Environment (transient HTTP 500 retry backoff and remote progression conflict resolution)
+    status: done
+
