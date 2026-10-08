@@ -23,8 +23,8 @@ import type {
   OPDSFacet,
   AcquisitionLink,
 } from "../../domain/opds.ts";
-import type { DownloadService } from "../../domain/downloads.ts";
-import type { BookRepository, SourceRepository, CatalogSource, AuthType } from "../../domain/database.ts";
+import type { DownloadProgress, DownloadService } from "../../domain/downloads.ts";
+import type { Book, BookRepository, SourceRepository, CatalogSource, AuthType } from "../../domain/database.ts";
 import { exportCatalogsToOPML, parseOPML } from "./opml.ts";
 
 export interface CatalogsUiElements {
@@ -63,6 +63,9 @@ export interface CatalogsUiElements {
 
 export interface CatalogsControllerCallbacks {
   onDownloadStarted?: (bookId: string) => void;
+  onDownloadCompleted?: (book: Book) => void;
+  onBookAcquired?: (book: Book) => void;
+  onReadNow?: (bookId: string) => void;
   onError?: (error: Error) => void;
   onCatalogsChanged?: (catalogs: OPDSCatalog[]) => void;
 }
@@ -116,6 +119,10 @@ export class CatalogsController {
   private allFeedEntries: OPDSEntry[] = [];
   private activeFacetFilters: Map<string, string> = new Map();
   private lastFailedUrl: string | null = null;
+  private downloadedBookIds: Set<string> = new Set();
+  private downloadedRemoteIds: Set<string> = new Set();
+  private activeDownloads: Map<string, DownloadProgress> = new Map();
+  private unsubscribeDownloadProgress: (() => void) | null = null;
 
   constructor(
     elements: CatalogsUiElements,
@@ -148,6 +155,14 @@ export class CatalogsController {
       // Ignore localStorage access failures
     }
 
+    // Subscribe to download progress events if available
+    if (typeof this.downloadService.onProgress === "function") {
+      this.unsubscribeDownloadProgress = this.downloadService.onProgress((progress) => {
+        this.handleDownloadProgress(progress);
+      });
+    }
+
+    void this.refreshDownloadedBooks();
     this.bindEvents();
     this.setupInfiniteScroll();
     this.loadCatalogs();
@@ -407,7 +422,17 @@ export class CatalogsController {
   }
 
   public async loadFeed(url: string): Promise<void> {
-    if (!this.navigationState) return;
+    if (!this.navigationState) {
+      const matchedCatalog = this.catalogs.find((c) => c.url === url);
+      this.navigationState = {
+        catalogId: matchedCatalog?.id ?? "custom",
+        feedUrl: url,
+        breadcrumbs: [{ title: matchedCatalog?.name ?? "OPDS Catalog", feedUrl: url }],
+        currentFeed: null,
+        isLoading: true,
+        error: null,
+      };
+    }
 
     this.showView("feed");
     this.showLoading(true);
@@ -430,6 +455,7 @@ export class CatalogsController {
       this.navigationState.isLoading = false;
       this.allFeedEntries = [...feed.entries];
 
+      await this.refreshDownloadedBooks();
       this.renderFeed(feed);
     } catch (err) {
       if ((err as Error)?.name === "AbortError") return;
@@ -543,17 +569,153 @@ export class CatalogsController {
     this.attachEntryListeners();
   }
 
-  private createListEntryCard(entry: OPDSEntry): string {
-    const coverLink = this.opdsClient.getCoverLink(entry);
+  public async refreshDownloadedBooks(): Promise<void> {
+    try {
+      const books = await this.bookRepo.findAll();
+      this.downloadedBookIds = new Set(books.map((b) => b.id));
+      this.downloadedRemoteIds = new Set(
+        books.filter((b) => b.remoteId).map((b) => b.remoteId as string),
+      );
+    } catch (err) {
+      console.warn("Could not load downloaded books from repository:", err);
+    }
+  }
+
+  public getBookIdForEntry(entry: OPDSEntry): string {
+    return `opds-${entry.id.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48)}`;
+  }
+
+  public isBookDownloaded(entry: OPDSEntry): boolean {
+    const bookId = this.getBookIdForEntry(entry);
+    return this.downloadedBookIds.has(bookId) || (entry.id ? this.downloadedRemoteIds.has(entry.id) : false);
+  }
+
+  public isBookDownloading(entry: OPDSEntry): boolean {
+    const bookId = this.getBookIdForEntry(entry);
+    return this.activeDownloads.has(bookId);
+  }
+
+  private renderEntryActions(entry: OPDSEntry): string {
+    const bookId = this.getBookIdForEntry(entry);
+    const isDownloaded = this.isBookDownloaded(entry);
+    const isDownloading = this.isBookDownloading(entry);
+    const downloadProgress = this.activeDownloads.get(bookId);
+
     const openAccessLink = this.opdsClient.getOpenAccessLink(entry);
     const acquisitionLinks = this.opdsClient.getAcquisitionLinks(entry);
     const hasAcquisition = openAccessLink || acquisitionLinks.length > 0;
 
+    let actionBtnHtml: string;
+    if (isDownloaded) {
+      actionBtnHtml = `<button class="btn-read-now" data-book-id="${bookId}" data-entry-id="${entry.id}">📖 Read Now</button>`;
+    } else if (isDownloading) {
+      const percent = downloadProgress && downloadProgress.totalBytes && downloadProgress.totalBytes > 0
+        ? Math.round((downloadProgress.progress >= 0 ? downloadProgress.progress : 0) * 100)
+        : 0;
+      const statusText = downloadProgress?.status === "verifying" ? "Verifying..." : `Downloading (${percent}%)`;
+      actionBtnHtml = `
+        <button class="btn-downloading" data-book-id="${bookId}" data-entry-id="${entry.id}" disabled>
+          <span class="spinner">⏳</span> ${statusText}
+        </button>
+      `;
+    } else if (hasAcquisition) {
+      actionBtnHtml = `
+        <button class="btn-acquire" data-entry-id="${entry.id}" data-book-id="${bookId}">
+          ${openAccessLink ? "Download" : "Acquire"}
+        </button>
+      `;
+    } else {
+      actionBtnHtml = `<button class="btn-acquire disabled" disabled>Unavailable</button>`;
+    }
+
+    const progressBarHtml = isDownloading && downloadProgress
+      ? `
+        <div class="entry-progress-bar">
+          <div class="entry-progress-fill" style="width: ${Math.round((downloadProgress.progress >= 0 ? downloadProgress.progress : 0) * 100)}%"></div>
+        </div>
+      `
+      : "";
+
+    return `
+      <div class="entry-actions" data-book-id="${bookId}">
+        ${actionBtnHtml}
+        <button class="btn-details" data-entry-id="${entry.id}" data-book-id="${bookId}">Details</button>
+      </div>
+      ${progressBarHtml}
+    `;
+  }
+
+  private handleDownloadProgress(progress: DownloadProgress): void {
+    const bookId = progress.bookId;
+    if (progress.status === "downloading" || progress.status === "verifying") {
+      this.activeDownloads.set(bookId, progress);
+      this.updateCardUi(bookId);
+    } else if (progress.status === "completed") {
+      this.activeDownloads.delete(bookId);
+      this.downloadedBookIds.add(bookId);
+      this.updateCardUi(bookId);
+    } else if (progress.status === "cancelled" || progress.status === "failed") {
+      this.activeDownloads.delete(bookId);
+      this.updateCardUi(bookId);
+    }
+  }
+
+  private updateCardUi(bookId: string): void {
+    const card = this.elements.feedList.querySelector<HTMLElement>(`.entry-card[data-book-id="${bookId}"]`);
+    if (!card) return;
+
+    const entryId = card.dataset.entryId;
+    if (!entryId) return;
+
+    const entry = this.allFeedEntries.find((e) => e.id === entryId);
+    if (!entry) return;
+
+    const oldActions = card.querySelector(".entry-actions");
+    const oldProgressBar = card.querySelector(".entry-progress-bar");
+    if (oldProgressBar) oldProgressBar.remove();
+
+    if (oldActions) {
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = this.renderEntryActions(entry);
+      const newActions = tempDiv.querySelector(".entry-actions");
+      const newProgressBar = tempDiv.querySelector(".entry-progress-bar");
+
+      if (newActions) {
+        oldActions.replaceWith(newActions);
+      }
+      if (newProgressBar && newActions) {
+        newActions.insertAdjacentElement("afterend", newProgressBar);
+      }
+
+      // Re-attach listeners for the updated elements on this card
+      const readNowBtn = card.querySelector<HTMLButtonElement>(".btn-read-now");
+      readNowBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.callbacks.onReadNow?.(bookId);
+      });
+
+      const acquireBtn = card.querySelector<HTMLButtonElement>(".btn-acquire:not(.disabled)");
+      acquireBtn?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        await this.acquireEntry(entry);
+      });
+
+      const detailsBtn = card.querySelector<HTMLButtonElement>(".btn-details");
+      detailsBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.showEntryDetails(entry);
+      });
+    }
+  }
+
+  private createListEntryCard(entry: OPDSEntry): string {
+    const bookId = this.getBookIdForEntry(entry);
+    const coverLink = this.opdsClient.getCoverLink(entry);
     const authors = entry.authors.map((a) => a.name).join(", ") || "Unknown Author";
     const categories = entry.categories.map((c) => c.label || c.term).join(", ");
 
     return `
-      <article class="entry-card" data-entry-id="${entry.id}">
+      <article class="entry-card" data-entry-id="${entry.id}" data-book-id="${bookId}">
         <div class="entry-cover">
           ${coverLink
             ? `<img src="${coverLink.href}" alt="" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />`
@@ -568,28 +730,19 @@ export class CatalogsController {
             ${entry.published ? `<span>Published: ${new Date(entry.published).toLocaleDateString()}</span>` : ""}
             ${entry["dcterms:language"] ? `<span>Lang: ${entry["dcterms:language"]}</span>` : ""}
           </div>
-          <div class="entry-actions">
-            ${hasAcquisition
-              ? `<button class="btn-acquire" data-entry-id="${entry.id}">
-                  ${openAccessLink ? "Download" : "Acquire"}
-                </button>`
-              : '<button class="btn-acquire disabled" disabled>Unavailable</button>'}
-            <button class="btn-details" data-entry-id="${entry.id}">Details</button>
-          </div>
+          ${this.renderEntryActions(entry)}
         </div>
       </article>
     `;
   }
 
   private createGridEntryCard(entry: OPDSEntry): string {
+    const bookId = this.getBookIdForEntry(entry);
     const coverLink = this.opdsClient.getCoverLink(entry);
-    const openAccessLink = this.opdsClient.getOpenAccessLink(entry);
-    const acquisitionLinks = this.opdsClient.getAcquisitionLinks(entry);
-    const hasAcquisition = openAccessLink || acquisitionLinks.length > 0;
     const authors = entry.authors.map((a) => a.name).join(", ") || "Unknown Author";
 
     return `
-      <article class="entry-card" data-entry-id="${entry.id}">
+      <article class="entry-card" data-entry-id="${entry.id}" data-book-id="${bookId}">
         <div class="entry-cover">
           ${coverLink
             ? `<img src="${coverLink.href}" alt="" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />`
@@ -599,14 +752,7 @@ export class CatalogsController {
         <div class="entry-info">
           <h3 class="entry-title" title="${this.escapeHtml(entry.title)}">${this.escapeHtml(entry.title)}</h3>
           <p class="entry-author">${this.escapeHtml(authors)}</p>
-          <div class="entry-actions">
-            ${hasAcquisition
-              ? `<button class="btn-acquire" data-entry-id="${entry.id}">
-                  ${openAccessLink ? "Download" : "Acquire"}
-                </button>`
-              : '<button class="btn-acquire disabled" disabled>Unavailable</button>'}
-            <button class="btn-details" data-entry-id="${entry.id}">Details</button>
-          </div>
+          ${this.renderEntryActions(entry)}
         </div>
       </article>
     `;
@@ -624,6 +770,16 @@ export class CatalogsController {
       });
     });
 
+    this.elements.feedList.querySelectorAll<HTMLButtonElement>(".btn-read-now").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const bookId = btn.dataset.bookId;
+        if (bookId) {
+          this.callbacks.onReadNow?.(bookId);
+        }
+      });
+    });
+
     this.elements.feedList.querySelectorAll<HTMLButtonElement>(".btn-details").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -631,6 +787,21 @@ export class CatalogsController {
         if (entryId && this.navigationState?.currentFeed) {
           const entry = this.allFeedEntries.find((e) => e.id === entryId);
           if (entry) this.showEntryDetails(entry);
+        }
+      });
+    });
+
+    // Clicking anywhere on a card (outside buttons) opens the book if downloaded
+    this.elements.feedList.querySelectorAll<HTMLElement>(".entry-card").forEach((card) => {
+      card.addEventListener("click", (e) => {
+        if ((e.target as HTMLElement).closest("button")) return;
+        const bookId = card.dataset.bookId;
+        const entryId = card.dataset.entryId;
+        if (bookId && entryId) {
+          const entry = this.allFeedEntries.find((item) => item.id === entryId);
+          if (entry && this.isBookDownloaded(entry)) {
+            this.callbacks.onReadNow?.(bookId);
+          }
         }
       });
     });
@@ -1214,32 +1385,72 @@ export class CatalogsController {
     document.body.appendChild(modal);
   }
 
-  private async startDownload(entry: OPDSEntry, url: string, _acquisitionType: string): Promise<void> {
-    const bookId = `opds-${entry.id.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48)}`;
+  public async startDownload(entry: OPDSEntry, url: string, _acquisitionType: string): Promise<void> {
+    const bookId = this.getBookIdForEntry(entry);
 
     const existing = await this.bookRepo.findById(bookId);
     if (existing) {
-      alert("This book is already in your library.");
+      this.downloadedBookIds.add(bookId);
+      this.callbacks.onReadNow?.(bookId);
       return;
     }
 
     const openAccessLink = this.opdsClient.getOpenAccessLink(entry);
+    const downloadRequest = {
+      bookId,
+      url,
+      title: entry.title,
+      subtitle: entry.published,
+      authors: entry.authors.map((a) => a.name).join(", "),
+      coverUrl: this.opdsClient.getCoverLink(entry)?.href ?? null,
+      sourceId: this.navigationState?.catalogId ?? null,
+      remoteId: entry.id,
+      expectedSize: openAccessLink?.length,
+    };
+
+    // Mark as downloading immediately in UI
+    this.activeDownloads.set(bookId, {
+      bookId,
+      status: "downloading",
+      bytesDownloaded: 0,
+      totalBytes: openAccessLink?.length,
+      progress: 0,
+    });
+    this.updateCardUi(bookId);
 
     try {
-      await this.downloadService.downloadBook({
-        bookId,
-        url,
-        title: entry.title,
-        subtitle: entry.published,
-        authors: entry.authors.map((a) => a.name).join(", "),
-        coverUrl: this.opdsClient.getCoverLink(entry)?.href ?? null,
+      this.callbacks.onDownloadStarted?.(bookId);
+      const result = await this.downloadService.downloadBook(downloadRequest);
+
+      // Register downloaded book into SQLite BookRepository
+      const bookRecord: Book = {
+        id: bookId,
         sourceId: this.navigationState?.catalogId ?? null,
         remoteId: entry.id,
-        expectedSize: openAccessLink?.length,
-      });
+        title: entry.title,
+        subtitle: entry.published ?? null,
+        authors: entry.authors.map((a) => a.name).join(", ") || null,
+        coverUrl: this.opdsClient.getCoverLink(entry)?.href ?? null,
+        acquisitionUrl: url,
+        mimeType: "application/epub+zip",
+        localPath: result.localPath,
+        fileSize: result.fileSize,
+        downloadedAt: new Date().toISOString(),
+      };
 
-      this.callbacks.onDownloadStarted?.(bookId);
+      await this.bookRepo.insert(bookRecord);
+      this.downloadedBookIds.add(bookId);
+      if (entry.id) {
+        this.downloadedRemoteIds.add(entry.id);
+      }
+      this.activeDownloads.delete(bookId);
+      this.updateCardUi(bookId);
+
+      this.callbacks.onBookAcquired?.(bookRecord);
+      this.callbacks.onDownloadCompleted?.(bookRecord);
     } catch (err) {
+      this.activeDownloads.delete(bookId);
+      this.updateCardUi(bookId);
       console.error("Download failed:", err);
       this.callbacks.onError?.(err instanceof Error ? err : new Error(String(err)));
       alert(`Download failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -1247,6 +1458,22 @@ export class CatalogsController {
   }
 
   private showEntryDetails(entry: OPDSEntry): void {
+    const bookId = this.getBookIdForEntry(entry);
+    const isDownloaded = this.isBookDownloaded(entry);
+    const isDownloading = this.isBookDownloading(entry);
+    const openAccessLink = this.opdsClient.getOpenAccessLink(entry);
+    const acquisitionLinks = this.opdsClient.getAcquisitionLinks(entry);
+    const hasAcquisition = openAccessLink || acquisitionLinks.length > 0;
+
+    let actionBtnHtml = "";
+    if (isDownloaded) {
+      actionBtnHtml = `<button class="btn btn-primary modal-read-now" data-book-id="${bookId}">📖 Read Now</button>`;
+    } else if (isDownloading) {
+      actionBtnHtml = `<button class="btn btn-secondary modal-downloading" disabled>⏳ Downloading...</button>`;
+    } else if (hasAcquisition) {
+      actionBtnHtml = `<button class="btn btn-primary modal-acquire" data-entry-id="${entry.id}">⬇️ ${openAccessLink ? "Download EPUB" : "Acquire EPUB"}</button>`;
+    }
+
     const modal = document.createElement("div");
     modal.className = "modal-backdrop";
     modal.innerHTML = `
@@ -1262,9 +1489,23 @@ export class CatalogsController {
           ${entry.categories.length > 0 ? `<p><strong>Categories:</strong> ${entry.categories.map((c) => this.escapeHtml(c.label || c.term)).join(", ")}</p>` : ""}
           <p><strong>ID:</strong> <code>${this.escapeHtml(entry.id)}</code></p>
         </div>
-        <button class="btn btn-primary modal-close">Close</button>
+        <div class="modal-actions form-actions">
+          ${actionBtnHtml}
+          <button class="btn btn-secondary modal-close">Close</button>
+        </div>
       </div>
     `;
+
+    modal.querySelector(".modal-read-now")?.addEventListener("click", () => {
+      modal.remove();
+      this.callbacks.onReadNow?.(bookId);
+    });
+
+    modal.querySelector(".modal-acquire")?.addEventListener("click", async () => {
+      modal.remove();
+      await this.acquireEntry(entry);
+    });
+
     modal.querySelector(".modal-close")?.addEventListener("click", () => modal.remove());
     modal.addEventListener("click", (e) => {
       if (e.target === modal) modal.remove();
@@ -1334,5 +1575,9 @@ export class CatalogsController {
   public destroy(): void {
     this.abortController?.abort();
     this.intersectionObserver?.disconnect();
+    if (this.unsubscribeDownloadProgress) {
+      this.unsubscribeDownloadProgress();
+      this.unsubscribeDownloadProgress = null;
+    }
   }
 }

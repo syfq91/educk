@@ -6,6 +6,7 @@ import { DatabaseClient, createRepositories, type DatabaseRepositories } from ".
 import { TauriDownloadService } from "./services/downloads/index.ts";
 import { DownloadController, type DownloadUiElements } from "./features/downloads/download-controller.ts";
 import type { ReaderSettings } from "./domain/reader.ts";
+import type { Book } from "./domain/database.ts";
 
 let readerController: ReaderViewController | null = null;
 let repos: DatabaseRepositories | null = null;
@@ -250,8 +251,43 @@ function setupReader(): void {
 
 // Milestone M5 Download Controller Setup
 let downloadController: DownloadController | null = null;
+let toastDismissTimeout: ReturnType<typeof setTimeout> | null = null;
 
-function setupDownloadManager(repositories: DatabaseRepositories | null): DownloadController | null {
+function showAcquisitionToast(book: Book): void {
+  const toast = document.querySelector<HTMLElement>("#acquisition-toast");
+  const titleEl = document.querySelector<HTMLElement>("#toast-title");
+  const subtitleEl = document.querySelector<HTMLElement>("#toast-subtitle");
+  const readBtn = document.querySelector<HTMLButtonElement>("#toast-btn-read");
+  const closeBtn = document.querySelector<HTMLButtonElement>("#toast-btn-close");
+
+  if (!toast || !titleEl || !subtitleEl || !readBtn || !closeBtn) return;
+
+  titleEl.textContent = book.title;
+  subtitleEl.textContent = book.authors ? `by ${book.authors}` : "Ready to read offline";
+
+  readBtn.onclick = () => {
+    toast.classList.add("hidden");
+    if (toastDismissTimeout) clearTimeout(toastDismissTimeout);
+    void libraryController?.openBook(book.id);
+  };
+
+  closeBtn.onclick = () => {
+    toast.classList.add("hidden");
+    if (toastDismissTimeout) clearTimeout(toastDismissTimeout);
+  };
+
+  toast.classList.remove("hidden");
+
+  if (toastDismissTimeout) clearTimeout(toastDismissTimeout);
+  toastDismissTimeout = setTimeout(() => {
+    toast.classList.add("hidden");
+  }, 8000);
+}
+
+function setupDownloadManager(
+  repositories: DatabaseRepositories | null,
+  downloadService: TauriDownloadService,
+): DownloadController | null {
   const container = document.querySelector<HTMLElement>("#download-card");
   const triggerBtn = document.querySelector<HTMLButtonElement>("#btn-download-sample");
   const cancelBtn = document.querySelector<HTMLButtonElement>("#btn-cancel-download");
@@ -279,10 +315,11 @@ function setupDownloadManager(repositories: DatabaseRepositories | null): Downlo
     bytesLabel,
   };
 
-  const downloadService = new TauriDownloadService();
   downloadController = new DownloadController(elements, downloadService, repositories.books, {
     onBookAcquired: (book) => {
       console.log("Book acquired and committed:", book);
+      void libraryController?.loadBooks?.();
+      showAcquisitionToast(book);
     },
     onError: (err) => {
       console.warn("Download error:", err);
@@ -499,7 +536,15 @@ function setupCatalogs(
     {
       onDownloadStarted: (bookId) => {
         console.log("Download started from catalog:", bookId);
-        libraryController?.loadBooks?.();
+      },
+      onBookAcquired: (book) => {
+        console.log("Book acquired from catalog:", book);
+        void libraryController?.loadBooks?.();
+        showAcquisitionToast(book);
+      },
+      onReadNow: (bookId) => {
+        console.log("Opening book from catalog:", bookId);
+        void libraryController?.openBook(bookId);
       },
       onError: (err) => {
         console.error("Catalogs error:", err);
@@ -515,7 +560,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   const dbRepos = await initDatabase();
   setupReader();
   const downloadService = new TauriDownloadService();
-  setupDownloadManager(dbRepos);
+  setupDownloadManager(dbRepos, downloadService);
   setupLibrary(dbRepos, readerController, {
     overlay: document.querySelector<HTMLElement>("#reader-view")!,
     mount: document.querySelector<HTMLElement>("#reader-mount")!,

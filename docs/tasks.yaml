@@ -28,7 +28,7 @@ milestones:
     status: complete
   - id: M9
     name: Integration (OPDS + Downloads + Library + Reader)
-    status: pending
+    status: complete
   - id: M10
     name: Local Reading Progress
     status: pending
@@ -227,3 +227,28 @@ tasks:
     milestone: M8
     description: Wire CatalogsController directly to SQLite SourceRepository and create comprehensive unit test suites
     status: done
+  - id: INT-001
+    milestone: M9
+    description: Wire seamless acquisition pipeline from catalog browse/search to download queue to SQLite registration
+    status: done
+  - id: INT-002
+    milestone: M9
+    description: Detect pre-downloaded books on catalog feed load and display direct "Read Now" action
+    status: done
+  - id: INT-003
+    milestone: M9
+    description: Render real-time streaming download progress bars dynamically on catalog entry cards
+    status: done
+  - id: INT-004
+    milestone: M9
+    description: Add "Read Now" transition in Book Details modal and interactive acquisition toast notifications
+    status: done
+  - id: INT-005
+    milestone: M9
+    description: Verify offline reading availability via read_book_file Tauri command with zero network overhead
+    status: done
+  - id: INT-006
+    milestone: M9
+    description: Create comprehensive integration test suite covering the entire acquisition and reading pipeline
+    status: done
+

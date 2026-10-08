@@ -1,6 +1,6 @@
 # Current Status
 
-**Current Milestone**: M8 — OPDS Catalog Browsing UI (Complete)
+**Current Milestone**: M9 — Integration: OPDS + Downloads + Library + Reader (Complete)
 
 ---
 
@@ -79,11 +79,19 @@
   - Implemented HTTP 401/403 authentication prompt modal (`#feed-auth-modal`) saving Basic/Bearer credentials directly to SQLite `SourceRepository` and retrying.
   - Resolved Rust toolchain compilation by decoupling catalog persistence from broken `sqlx` macros to pure TypeScript `SourceRepository`.
   - Created unit test suites: `tests/unit/opml.test.ts` (8 tests) and `tests/unit/catalogs-controller.test.ts` (13 tests). Total 121 automated frontend unit tests passing.
+- **Milestone M9 (Integration: OPDS + Downloads + Library + Reader)**:
+  - Connected the end-to-end acquisition pipeline: Catalog Entry -> Download Queue -> Streaming Progress -> Atomic Commit & SQLite `BookRepository` -> Library Bookshelf -> Immediate Reader Transition.
+  - Implemented dynamic card status updates in `CatalogsController` tracking downloads via `DownloadService.onProgress` with real-time percentage indicators and progress bars (`.entry-progress-bar`, `.entry-progress-fill`).
+  - Added intelligent pre-download detection: already-downloaded books in catalog feeds render "📖 Read Now" buttons immediately, allowing instant reading without duplicate downloading.
+  - Added "Read Now" action to Book Details modal (`.modal-read-now`) and interactive acquisition toast notifications (`#acquisition-toast`) with a one-click "Read Now" shortcut upon download completion.
+  - Verified offline reading availability: local EPUBs open with zero network overhead via `read_book_file` Tauri IPC command, preserving sandboxing and privacy.
+  - Shared a singleton `TauriDownloadService` across application controllers (`LibraryController` and `CatalogsController`), preventing redundant listeners and event conflicts.
+  - Created integration test suite `tests/unit/m9-integration.test.ts` (6 tests) validating full acquisition pipeline, pre-download detection, live progress events, modal transitions, offline zero-overhead reading, and network failure resilience. Total 127 automated frontend tests passing across 23 test files.
 
 ---
 
 ## In Progress
-- Milestone M9 preparation: Integration (OPDS + Downloads + Library + Reader).
+- Milestone M10 preparation: Local Reading Progress.
 
 ---
 
@@ -98,18 +106,17 @@ None.
 ---
 
 ## Next Task
-- **Milestone M9 (Integration: OPDS + Downloads + Library + Reader)**:
-  1. Verify seamless acquisition flow from OPDS search/facet to download queue to offline library.
-  2. Implement direct "Read Now" transition after catalog download completes.
-  3. Ensure offline availability of downloaded books with zero network overhead.
+- **Milestone M10 (Local Reading Progress)**:
+  1. Record precise reading positions (EPUB CFI, chapter, fraction 0.0-1.0).
+  2. Implement local debounced auto-save to SQLite `ProgressRepository`.
+  3. Resume reading position seamlessly across app restarts and orientation changes.
 
 ---
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
-- **ESLint (`pnpm run lint`)**: PASS (0 errors)
-- **Unit Tests (`pnpm test`)**: PASS (121 tests passed across 22 test files)
+- **ESLint (`pnpm run lint`)**: PASS (0 errors, 12 warnings)
+- **Unit & Integration Tests (`pnpm test`)**: PASS (127 tests passed across 23 test files)
 - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
 - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
 - **Rust Clippy (`cargo clippy`)**: PASS (0 warnings)
-- **Rust Cargo Test (`cargo test`)**: PASS (13 tests passed)

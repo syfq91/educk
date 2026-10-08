@@ -246,6 +246,21 @@
       </nav>
     </div>
 
+    <!-- Global Acquisition Toast Notification (Milestone M9) -->
+    <div id="acquisition-toast" class="acquisition-toast hidden" role="alert" aria-live="polite">
+      <div class="toast-content">
+        <span class="toast-icon">📚</span>
+        <div class="toast-text">
+          <div class="toast-title" id="toast-title">Download complete</div>
+          <div class="toast-subtitle" id="toast-subtitle">Ready to read offline</div>
+        </div>
+      </div>
+      <div class="toast-actions">
+        <button id="toast-btn-read" class="btn btn-primary btn-sm">📖 Read Now</button>
+        <button id="toast-btn-close" class="btn-toast-close" aria-label="Close notification">✕</button>
+      </div>
+    </div>
+
     <!-- Full-screen Production Reader Overlay -->
     <div id="reader-view" class="reader-overlay hidden">
       <header class="reader-header">
