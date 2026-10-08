@@ -5,6 +5,7 @@ import { CatalogsController, type CatalogsUiElements } from "./features/catalogs
 import { DatabaseClient, createRepositories, type DatabaseRepositories } from "./services/database/index.ts";
 import { TauriDownloadService } from "./services/downloads/index.ts";
 import { DownloadController, type DownloadUiElements } from "./features/downloads/download-controller.ts";
+import { LocalProgressManager } from "./services/progress/index.ts";
 import type { ReaderSettings } from "./domain/reader.ts";
 import type { Book } from "./domain/database.ts";
 
@@ -50,7 +51,7 @@ function setupNavigation(): void {
 }
 
 // Production Reader View Controller Initialization
-function setupReader(): void {
+function setupReader(progressManager: LocalProgressManager | null): void {
   const overlay = document.querySelector<HTMLElement>("#reader-view");
   const mount = document.querySelector<HTMLElement>("#reader-mount");
   const backBtn = document.querySelector<HTMLButtonElement>("#reader-btn-back");
@@ -154,17 +155,24 @@ function setupReader(): void {
         }
       },
       onPositionChange: (position, bookId) => {
-        if (repos && bookId) {
-          void repos.progress.upsert({
+        if (bookId) {
+          progressManager?.recordProgress({
             bookId,
             progression: position.progression,
             locator: position.locator,
             href: position.href ?? null,
             chapterTitle: position.title ?? null,
-            modifiedAt: new Date().toISOString(),
+            modifiedAt: position.modifiedAt || new Date().toISOString(),
           });
-          void repos.books.updateLastOpened(bookId, new Date().toISOString());
         }
+      },
+      onBeforeClose: async () => {
+        if (progressManager) {
+          await progressManager.flush();
+        }
+      },
+      onClose: () => {
+        void libraryController?.loadBooks?.();
       },
     },
   );
@@ -558,7 +566,10 @@ function setupCatalogs(
 window.addEventListener("DOMContentLoaded", async () => {
   setupNavigation();
   const dbRepos = await initDatabase();
-  setupReader();
+  const progressManager = dbRepos
+    ? new LocalProgressManager(dbRepos.progress, dbRepos.books, { debounceMs: 1000 })
+    : null;
+  setupReader(progressManager);
   const downloadService = new TauriDownloadService();
   setupDownloadManager(dbRepos, downloadService);
   setupLibrary(dbRepos, readerController, {
@@ -592,5 +603,19 @@ window.addEventListener("DOMContentLoaded", async () => {
     tapZoneRight: document.querySelector<HTMLElement>("#tap-zone-right") ?? undefined,
   });
   setupCatalogs(dbRepos, downloadService);
+
+  // Register lifecycle listeners for backgrounding and unmount flushes
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      void progressManager?.flush();
+    }
+  });
+  window.addEventListener("pagehide", () => {
+    void progressManager?.flush();
+  });
+  window.addEventListener("beforeunload", () => {
+    void progressManager?.flush();
+  });
+
   void initApp();
 });

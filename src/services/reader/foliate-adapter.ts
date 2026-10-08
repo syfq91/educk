@@ -74,6 +74,10 @@ export class FoliateReaderAdapter implements Reader {
       fileInput = bookData;
     }
 
+    if (fileInput instanceof Blob && !("name" in fileInput)) {
+      Object.defineProperty(fileInput, "name", { value: "book.epub", configurable: true });
+    }
+
     // Create and attach <foliate-view> custom element
     const view = document.createElement("foliate-view");
     this.view = view;

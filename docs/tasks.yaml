@@ -31,7 +31,7 @@ milestones:
     status: complete
   - id: M10
     name: Local Reading Progress
-    status: pending
+    status: complete
   - id: M11
     name: OPDS Progression 1.0 Synchronization
     status: pending
@@ -251,4 +251,29 @@ tasks:
     milestone: M9
     description: Create comprehensive integration test suite covering the entire acquisition and reading pipeline
     status: done
+  - id: PROG-001
+    milestone: M10
+    description: Define reading progress domain interfaces, types, and defensive validators
+    status: done
+  - id: PROG-002
+    milestone: M10
+    description: Implement LocalProgressManager with 1000ms debounce controller for SQLite persistence
+    status: done
+  - id: PROG-003
+    milestone: M10
+    description: Implement immediate flush on reader close, unmount, and book switching
+    status: done
+  - id: PROG-004
+    milestone: M10
+    description: Implement immediate flush on app backgrounding and unload via visibilitychange and pagehide
+    status: done
+  - id: PROG-005
+    milestone: M10
+    description: Implement defensive locator validation and fractional progression fallback recovery
+    status: done
+  - id: PROG-006
+    milestone: M10
+    description: Create comprehensive unit and integration test suites for debounced progress tracking
+    status: done
+
 

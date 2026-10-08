@@ -1,6 +1,6 @@
 # Current Status
 
-**Current Milestone**: M9 — Integration: OPDS + Downloads + Library + Reader (Complete)
+**Current Milestone**: M10 — Local Reading Progress (Complete)
 
 ---
 
@@ -90,8 +90,20 @@
 
 ---
 
+- **Milestone M10 (Local Reading Progress)**:
+  - Created dedicated Reading Progress domain contracts and defensive validators in `src/domain/progress.ts` (`ProgressUpdate`, `ProgressManager`, `sanitizeProgression`, `isValidCfi`, `validateProgressUpdate`).
+  - Implemented `LocalProgressManager` in `src/services/progress/local-progress-manager.ts` providing 1000ms debouncing for rapid page turns to prevent disk thrashing and SQLite lock contention.
+  - Implemented immediate flushing to SQLite on reader close (`onBeforeClose`), unmount, and book switching.
+  - Implemented immediate flushing on mobile OS backgrounding and unload via global `visibilitychange`, `pagehide`, and `beforeunload` event listeners.
+  - Added robust two-stage locator recovery in `ReaderViewController`: when an initial CFI locator is corrupted or malformed, the reader catches the navigation error and seamlessly falls back to fractional progression (`goToFraction`), avoiding reader crashes.
+  - Ensured `books.last_opened_at` is updated in SQLite in lockstep with reading progress saves to keep library sorting by "Recently Read" accurate.
+  - Verified strictly offline, zero-network reading progress tracking.
+  - Created unit test suite `tests/unit/progress-manager.test.ts` (9 tests) and integration test suite `tests/unit/m10-integration.test.ts` (4 tests). Total 140 automated tests passing across 25 test files.
+
+---
+
 ## In Progress
-- Milestone M10 preparation: Local Reading Progress.
+- Milestone M11 preparation: OPDS Progression 1.0 Synchronization.
 
 ---
 
@@ -106,17 +118,18 @@ None.
 ---
 
 ## Next Task
-- **Milestone M10 (Local Reading Progress)**:
-  1. Record precise reading positions (EPUB CFI, chapter, fraction 0.0-1.0).
-  2. Implement local debounced auto-save to SQLite `ProgressRepository`.
-  3. Resume reading position seamlessly across app restarts and orientation changes.
+- **Milestone M11 (OPDS Progression 1.0 Synchronization)**:
+  1. Implement `ProgressionClient` supporting `GET` and `PUT` endpoints.
+  2. Maintain local synchronization queue for offline operations and network flapping.
+  3. Implement linear conflict resolution (timestamp comparison matrix).
 
 ---
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
-- **ESLint (`pnpm run lint`)**: PASS (0 errors, 12 warnings)
-- **Unit & Integration Tests (`pnpm test`)**: PASS (127 tests passed across 23 test files)
+- **ESLint (`pnpm run lint`)**: PASS (0 errors, 13 warnings)
+- **Unit & Integration Tests (`pnpm test`)**: PASS (140 tests passed across 25 test files)
 - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
 - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
 - **Rust Clippy (`cargo clippy`)**: PASS (0 warnings)
+

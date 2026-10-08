@@ -238,6 +238,7 @@ export class LibraryController {
         await this.readerController.openBook(fileContent, {
           bookId,
           initialPosition: savedProgress?.locator,
+          initialProgression: savedProgress?.progression,
         });
         this.callbacks.onOpenBook?.(bookId);
       }

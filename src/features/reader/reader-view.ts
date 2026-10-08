@@ -56,6 +56,7 @@ export interface ReaderViewElements {
 export interface ReaderViewCallbacks {
   onSettingsChange?: (settings: ReaderSettings) => void;
   onPositionChange?: (position: ReadingPosition, bookId?: string) => void;
+  onBeforeClose?: () => Promise<void> | void;
   onClose?: () => void;
 }
 
@@ -95,7 +96,7 @@ export class ReaderViewController {
 
   public async openBook(
     bookData: Blob | ArrayBuffer | string,
-    options?: { bookId?: string; initialPosition?: string },
+    options?: { bookId?: string; initialPosition?: string; initialProgression?: number },
   ): Promise<void> {
     this.currentBookId = options?.bookId;
     this.elements.overlay.classList.remove("hidden");
@@ -141,12 +142,33 @@ export class ReaderViewController {
       try {
         await this.reader.goTo(options.initialPosition);
       } catch (err) {
-        console.warn("Could not restore initial reading position:", err);
+        console.warn("Could not restore initial reading position via locator CFI:", err);
+        // Fallback recovery: try fractional progression if provided
+        if (typeof options.initialProgression === "number" && options.initialProgression > 0) {
+          try {
+            await this.reader.goToFraction(options.initialProgression);
+          } catch (fracErr) {
+            console.warn("Could not restore reading position via fraction fallback:", fracErr);
+          }
+        }
+      }
+    } else if (typeof options?.initialProgression === "number" && options.initialProgression > 0) {
+      try {
+        await this.reader.goToFraction(options.initialProgression);
+      } catch (fracErr) {
+        console.warn("Could not set initial reading position via fraction:", fracErr);
       }
     }
   }
 
   public async close(): Promise<void> {
+    if (this.callbacks.onBeforeClose) {
+      try {
+        await this.callbacks.onBeforeClose();
+      } catch (err) {
+        console.warn("Error in onBeforeClose callback:", err);
+      }
+    }
     if (this.reader) {
       await this.reader.close();
       this.reader.destroy();
