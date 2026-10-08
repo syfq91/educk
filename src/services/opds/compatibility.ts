@@ -90,6 +90,7 @@ export function detectServerProfile(feed: OPDSFeed, rawDoc?: Document): ServerPr
   if (feedId.includes("/opds/v1.2/") || feedLinks.includes("/opds/v1.2/") || feedId.includes("komga")) return "komga";
   if (feedId.includes("/api/opds/") || feedLinks.includes("/api/opds/") || feedId.includes("kavita")) return "kavita";
   if (feedId.includes("readarr") || feedLinks.includes("readarr")) return "readarr";
+  if (feedId.startsWith("tag:bookflow") || feedId.includes("bookflow") || feedLinks.includes("bookflow") || (feed.title && feed.title.toLowerCase().includes("bookflow"))) return "bookflow";
 
   return "standard";
 }

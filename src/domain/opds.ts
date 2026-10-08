@@ -89,7 +89,7 @@ export interface OPDSEntry {
   "dcterms:subject"?: string;
 }
 
-export type ServerProfile = "calibre-web" | "komga" | "kavita" | "readarr" | "standard";
+export type ServerProfile = "calibre-web" | "komga" | "kavita" | "readarr" | "bookflow" | "standard";
 
 export interface OPDSFeed {
   id: string;

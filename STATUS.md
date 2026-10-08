@@ -169,11 +169,19 @@
   - Implemented and verified edge-case resilience: transient HTTP 500 server error recovery with exponential backoff and multi-device remote progression conflict resolution.
   - Authored comprehensive documentation in `docs/e2e-testing.md`.
   - Total 246 automated tests passing across 37 test files.
+- **BookFlow OPDS 1.2 & Progression 1.0 Compatibility**:
+  - Investigated and verified compatibility against `syfq91/bookflow`.
+  - Upgraded `ProgressionClient` to support `application/opds-progression+json` MIME type, top-level `progression: float`, and `device: { id, name }` object.
+  - Implemented graceful handling of HTTP 200 with empty body for unread publications.
+  - Added immediate HTTP 409 conflict detection (`ProgressionConflictError`) without futile retries, triggering remote fetching and conflict resolution.
+  - Added `bookflow` server profile heuristic detection in `compatibility.ts`.
+  - Created dedicated compatibility test suite `tests/unit/bookflow-compatibility.test.ts` (8 tests).
+  - Total 257 automated tests passing across 38 test files.
 
 ---
 
 ## In Progress
-None. All 17 milestones (M0–M17) are 100% complete! Production Release Gate passed.
+None. All 17 milestones (M0–M17) and ecosystem compatibility checks are 100% complete!
 
 ---
 
@@ -195,7 +203,7 @@ v1.0.0 Production Release & Packaging.
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
 - **ESLint (`pnpm run lint`)**: PASS (0 errors, 13 warnings)
-- **Unit & Integration Tests (`pnpm test`)**: PASS (246 tests passed across 37 test files)
+- **Unit & Integration Tests (`pnpm test`)**: PASS (257 tests passed across 38 test files)
 - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
 - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
 - **Rust Cargo Tests Check (`cargo check --tests`)**: PASS (0 errors)

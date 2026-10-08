@@ -20,9 +20,17 @@ export interface RemoteProgressionLocator {
   locations: RemoteProgressionLocations;
 }
 
+export interface RemoteProgressionDevice {
+  id: string;
+  name?: string;
+}
+
 export interface RemoteProgressionPayload {
   modified: string;          // ISO 8601 UTC timestamp
-  device: string;            // Device identifier string (e.g. educk-android-xyz)
+  device: string | RemoteProgressionDevice; // Device identifier string or { id, name }
+  progression?: number;      // 0.0 to 1.0 (BookFlow / top-level OPDS Progression 1.0)
+  title?: string;            // Current position label / chapter title
+  references?: string[];     // Content document references (e.g. ["chapter1.html"])
   locator: RemoteProgressionLocator;
 }
 

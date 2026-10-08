@@ -10,6 +10,9 @@ export {
   ProgressionClient,
   ProgressionNetworkError,
   ProgressionAuthError,
+  ProgressionConflictError,
+  isValidProgressionPayload,
+  normalizeProgressionPayload,
   createProgressionClient,
 } from "./progression-client.ts";
 export {

@@ -27,6 +27,7 @@ import type {
   RemoteProgressionPayload,
   SyncBookOptions,
 } from "../../domain/progression.ts";
+import { ProgressionConflictError } from "./progression-client.ts";
 
 export interface ProgressionSyncManagerOptions {
   progressRepo: ProgressRepository;
@@ -260,6 +261,16 @@ export class ProgressionSyncManager implements IProgressionSyncManager {
     }
 
     // Remote is newer during an active reading session -> Conflict!
+    return await this.recordConflict(bookId, localProgress, remotePayload, localVersion, bookTitle);
+  }
+
+  private async recordConflict(
+    bookId: string,
+    localProgress: ReadingProgress,
+    remotePayload: RemoteProgressionPayload,
+    localVersion: number,
+    bookTitle?: string,
+  ): Promise<ProgressionSyncResult> {
     const conflict: ProgressionConflict = {
       bookId,
       localProgression: localProgress.progression,
@@ -306,7 +317,10 @@ export class ProgressionSyncManager implements IProgressionSyncManager {
     const deviceId = await this.getDeviceId();
     const payload: RemoteProgressionPayload = {
       modified: localProgress.modifiedAt,
-      device: deviceId,
+      device: { id: deviceId, name: "educk Reader" },
+      progression: localProgress.progression,
+      title: localProgress.chapterTitle ?? undefined,
+      references: localProgress.href ? [localProgress.href] : undefined,
       locator: {
         href: localProgress.href ?? undefined,
         title: localProgress.chapterTitle ?? undefined,
@@ -339,6 +353,18 @@ export class ProgressionSyncManager implements IProgressionSyncManager {
       this.callbacks?.onSyncComplete?.(res);
       return res;
     } catch (err) {
+      if (err instanceof ProgressionConflictError) {
+        // BookFlow / OPDS 409 Conflict: Remote progression has a newer timestamp
+        try {
+          const remote = await this.client.getProgression(url, auth);
+          if (remote) {
+            return await this.recordConflict(bookId, localProgress, remote, currentVersion);
+          }
+        } catch (fetchErr) {
+          console.warn(`[ProgressionSyncManager] Error fetching remote progression on 409 conflict:`, fetchErr);
+        }
+      }
+
       const error = err instanceof Error ? err : new Error(String(err));
       await this.syncStateRepo.upsert({
         bookId,

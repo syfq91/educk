@@ -212,7 +212,7 @@ export class OPDSClient {
       const href = linkEl.getAttribute("href");
       if (!href) return;
 
-      const safeHref = this.resolveUrl(href, element.baseURI);
+      const safeHref = this.resolveUrl(href, linkEl);
       if (!safeHref) return;
 
       const rel = (linkEl.getAttribute("rel") || "alternate") as OPDSLinkRel;
@@ -239,7 +239,7 @@ export class OPDSClient {
         link["opds:indirectAcquisition"] = Array.from(indirectLinks)
           .map((il) => {
             const ihref = il.getAttribute("href");
-            const safeIHref = this.resolveUrl(ihref || "", element.baseURI);
+            const safeIHref = this.resolveUrl(ihref || "", il);
             if (!safeIHref) return null;
             const irel = (il.getAttribute("rel") || "") as OPDSLinkRel;
             const itype = il.getAttribute("type") as OPDSLinkType | undefined;
@@ -378,7 +378,7 @@ export class OPDSClient {
             const count = countStr ? parseInt(countStr, 10) : 0;
             const label = valueEl.getAttribute("label") || value;
             const rawHref = valueEl.getAttribute("href");
-            const href = rawHref ? this.resolveUrl(rawHref, element.baseURI) : undefined;
+            const href = rawHref ? this.resolveUrl(rawHref, valueEl) : undefined;
             const active = valueEl.getAttribute("active") === "true";
 
             if (value) {
@@ -401,7 +401,7 @@ export class OPDSClient {
         const groupName = el.getAttribute("opds:facetGroup") || el.getAttribute("facetGroup") || "Filter";
         const title = el.getAttribute("title") || "Option";
         const hrefRaw = el.getAttribute("href");
-        const href = hrefRaw ? this.resolveUrl(hrefRaw, element.baseURI) : undefined;
+        const href = hrefRaw ? this.resolveUrl(hrefRaw, el) : undefined;
         const countStr = el.getAttribute("opds:count") || el.getAttribute("count");
         const count = countStr ? parseInt(countStr, 10) : 0;
         const active = el.getAttribute("opds:activeFacet") === "true" || el.getAttribute("activeFacet") === "true";
@@ -432,7 +432,7 @@ export class OPDSClient {
     const href = linkEl.getAttribute("href");
     if (!href) return undefined;
 
-    const safeHref = this.resolveUrl(href, element.baseURI);
+    const safeHref = this.resolveUrl(href, linkEl);
     if (!safeHref) return undefined;
 
     return {
@@ -508,13 +508,30 @@ export class OPDSClient {
     return null;
   }
 
-  private resolveUrl(href: string, baseUrl?: string): string {
+  private resolveUrl(href: string, context?: Element | string): string {
     if (!href) return "";
     try {
-      const base =
-        baseUrl && baseUrl !== "about:blank"
-          ? baseUrl
-          : this.currentFeedUrl || "https://localhost";
+      let xmlBase: string | null = null;
+      if (typeof context === "object" && context !== null && "getAttribute" in context) {
+        let curr: Element | null = context;
+        while (curr) {
+          const baseAttr = curr.getAttribute("xml:base");
+          if (baseAttr) {
+            xmlBase = baseAttr;
+            break;
+          }
+          curr = curr.parentElement;
+        }
+      } else if (
+        typeof context === "string" &&
+        context &&
+        context !== "about:blank" &&
+        !context.startsWith("http://localhost")
+      ) {
+        xmlBase = context;
+      }
+
+      const base = xmlBase || this.currentFeedUrl || "https://localhost";
       const resolved = new URL(href, base);
       if (resolved.protocol === "http:" || resolved.protocol === "https:") {
         return resolved.href;
