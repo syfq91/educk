@@ -49,10 +49,10 @@ milestones:
     status: complete
   - id: M16
     name: Performance Optimization
-    status: pending
+    status: complete
   - id: M17
     name: End-to-End Testing & Release Gate
-    status: pending
+    status: complete
 
 tasks:
   - id: GOV-001

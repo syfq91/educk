@@ -52,7 +52,10 @@ See [docs/architecture.md](docs/architecture.md) for full architectural details.
 - [docs/security.md](docs/security.md) — Threat model, CSP, and sandboxing specifications
 - [docs/data-model.md](docs/data-model.md) — SQLite schema, relations, and migration policies
 - [docs/reader.md](docs/reader.md) — Foliate-js reader integration, shadow DOM, and spike findings
+- [docs/server-compatibility.md](docs/server-compatibility.md) — OPDS ecosystem compatibility normalization and server detection
+- [docs/performance.md](docs/performance.md) — Performance budgets, startup marks, 60fps scrolling, and memory limits
 - [docs/testing.md](docs/testing.md) — Testing strategy, fixture matrix, and Android lifecycle tests
+- [docs/e2e-testing.md](docs/e2e-testing.md) — End-to-End Golden Path testing and automated fake OPDS/progression server
 - [docs/decisions/](docs/decisions/) — Architecture Decision Records (ADRs)
 - [docs/research/](docs/research/) — Research reports on Tauri 2 Android, foliate-js, OPDS 1.2, and Progression
 
