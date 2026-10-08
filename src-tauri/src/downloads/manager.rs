@@ -44,6 +44,13 @@ impl DownloadManager {
         let book_id = request.book_id.clone();
         validate_book_id(&book_id)?;
 
+        // Security: Whitelist HTTP and HTTPS download URLs only (reject file://, data:, javascript:)
+        if !request.url.starts_with("http://") && !request.url.starts_with("https://") {
+            return Err(DownloadError::InvalidUrl(
+                "Only HTTP and HTTPS URLs are permitted for downloads".to_string(),
+            ));
+        }
+
         // Deduplication check
         {
             let active = self.active_downloads.read().await;

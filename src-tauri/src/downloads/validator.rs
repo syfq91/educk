@@ -5,6 +5,7 @@ use thiserror::Error;
 
 const MAX_UNCOMPRESSED_BYTES: u64 = 500 * 1024 * 1024; // 500 MB limit against ZIP bombs
 const MAX_COMPRESSION_RATIO: f64 = 100.0; // 100:1 ratio limit
+const MAX_ENTRY_COUNT: usize = 10_000; // Limit against archive entry exhaustion attacks
 
 #[derive(Debug, Error)]
 pub enum ValidationError {
@@ -22,6 +23,9 @@ pub enum ValidationError {
 
     #[error("Potential ZIP Slip path traversal attack detected in entry: '{0}'")]
     ZipSlipAttempt(String),
+
+    #[error("Potential ZIP bomb detected: entry count {0} exceeds safety limit")]
+    TooManyEntries(usize),
 
     #[error("Potential ZIP bomb detected: uncompressed size {uncompressed} bytes exceeds limit or ratio {ratio:.1}:1 exceeds threshold")]
     ZipBombDetected { uncompressed: u64, ratio: f64 },
@@ -52,6 +56,9 @@ pub fn validate_epub_archive(path: &Path) -> Result<EpubValidationReport, Valida
         .map_err(|e| ValidationError::NotAValidZip(e.to_string()))?;
 
     let entry_count = archive.len();
+    if entry_count > MAX_ENTRY_COUNT {
+        return Err(ValidationError::TooManyEntries(entry_count));
+    }
     let mut has_mimetype = false;
     let mut has_container = false;
     let mut total_uncompressed: u64 = 0;
@@ -232,5 +239,21 @@ mod tests {
 
         let res = validate_epub_archive(file.path());
         assert!(matches!(res, Err(ValidationError::ZipSlipAttempt(_))));
+    }
+
+    #[test]
+    fn test_rejects_too_many_entries() {
+        let file = NamedTempFile::new().unwrap();
+        {
+            let mut zip = zip::ZipWriter::new(&file);
+            let options = zip::write::SimpleFileOptions::default();
+            for i in 0..=MAX_ENTRY_COUNT {
+                zip.start_file(format!("file_{}.txt", i), options).unwrap();
+            }
+            zip.finish().unwrap();
+        }
+
+        let res = validate_epub_archive(file.path());
+        assert!(matches!(res, Err(ValidationError::TooManyEntries(_))));
     }
 }

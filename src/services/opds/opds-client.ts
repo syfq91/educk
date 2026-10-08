@@ -33,9 +33,25 @@ const DEFAULT_CONFIG: OPDSClientConfig = {
 
 export class OPDSClient {
   private config: OPDSClientConfig;
+  private currentFeedUrl = "";
 
   constructor(config: Partial<OPDSClientConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+  }
+
+  /**
+   * Defensive XML validation: ensures incoming Atom feed complies with RFC 4287 Section 2
+   * ("Atom documents MUST NOT contain a DTD"), protecting against XXE and Billion Laughs entity expansion.
+   */
+  private validateSafeXml(xmlText: string): void {
+    const hasDtd = /<!DOCTYPE\b[^>]*>/i.test(xmlText);
+    const hasEntity = /<!ENTITY\b[^>]*>/i.test(xmlText);
+    if (hasDtd || hasEntity) {
+      throw new OPDSParseError(
+        "Prohibited DTD or entity declaration detected in Atom XML (XXE defense)",
+        xmlText,
+      );
+    }
   }
 
   async fetchFeed(url: string, options: OPDSFetchOptions = {}): Promise<OPDSFeed> {
@@ -81,8 +97,8 @@ export class OPDSClient {
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err));
 
-        // Don't retry on auth errors or abort
-        if (err instanceof OPDSAuthError || err instanceof DOMException) {
+        // Don't retry on auth, parse, or abort errors
+        if (err instanceof OPDSAuthError || err instanceof OPDSParseError || err instanceof DOMException) {
           throw err;
         }
 
@@ -125,6 +141,9 @@ export class OPDSClient {
   }
 
   private parseFeed(xmlText: string, feedUrl: string): OPDSFeed {
+    this.currentFeedUrl = feedUrl;
+    this.validateSafeXml(xmlText);
+
     let doc: Document;
 
     try {
@@ -185,13 +204,16 @@ export class OPDSClient {
       const href = linkEl.getAttribute("href");
       if (!href) return;
 
+      const safeHref = this.resolveUrl(href, element.baseURI);
+      if (!safeHref) return;
+
       const rel = (linkEl.getAttribute("rel") || "alternate") as OPDSLinkRel;
       const type = linkEl.getAttribute("type") as OPDSLinkType | undefined;
       const title = linkEl.getAttribute("title") || undefined;
       const lengthStr = linkEl.getAttribute("length");
       const length = lengthStr ? parseInt(lengthStr, 10) : undefined;
 
-      const link: OPDSLink = { rel, href: this.resolveUrl(href, element.baseURI), type, title, length };
+      const link: OPDSLink = { rel, href: safeHref, type, title, length };
 
       // OPDS extensions
       const price = linkEl.getAttribute("opds:price");
@@ -206,15 +228,19 @@ export class OPDSClient {
       // Indirect acquisition
       const indirectLinks = linkEl.querySelectorAll("link[rel^='http://opds-spec.org/acquisition']");
       if (indirectLinks.length > 0) {
-        link["opds:indirectAcquisition"] = Array.from(indirectLinks).map((il) => {
-          const ihref = il.getAttribute("href");
-          const irel = (il.getAttribute("rel") || "") as OPDSLinkRel;
-          const itype = il.getAttribute("type") as OPDSLinkType | undefined;
-          const ititle = il.getAttribute("title") || undefined;
-          const ilengthStr = il.getAttribute("length");
-          const ilength = ilengthStr ? parseInt(ilengthStr, 10) : undefined;
-          return { rel: irel, href: this.resolveUrl(ihref || "", element.baseURI), type: itype, title: ititle, length: ilength };
-        });
+        link["opds:indirectAcquisition"] = Array.from(indirectLinks)
+          .map((il) => {
+            const ihref = il.getAttribute("href");
+            const safeIHref = this.resolveUrl(ihref || "", element.baseURI);
+            if (!safeIHref) return null;
+            const irel = (il.getAttribute("rel") || "") as OPDSLinkRel;
+            const itype = il.getAttribute("type") as OPDSLinkType | undefined;
+            const ititle = il.getAttribute("title") || undefined;
+            const ilengthStr = il.getAttribute("length");
+            const ilength = ilengthStr ? parseInt(ilengthStr, 10) : undefined;
+            return { rel: irel, href: safeIHref, type: itype, title: ititle, length: ilength };
+          })
+          .filter((l): l is NonNullable<typeof l> => l !== null);
       }
 
       links.push(link);
@@ -398,9 +424,12 @@ export class OPDSClient {
     const href = linkEl.getAttribute("href");
     if (!href) return undefined;
 
+    const safeHref = this.resolveUrl(href, element.baseURI);
+    if (!safeHref) return undefined;
+
     return {
       rel: rel as OPDSLinkRel,
-      href: this.resolveUrl(href, element.baseURI),
+      href: safeHref,
       type: linkEl.getAttribute("type") as OPDSLinkType | undefined,
       title: linkEl.getAttribute("title") || undefined,
     };
@@ -471,11 +500,20 @@ export class OPDSClient {
     return null;
   }
 
-  private resolveUrl(href: string, baseUrl: string): string {
+  private resolveUrl(href: string, baseUrl?: string): string {
+    if (!href) return "";
     try {
-      return new URL(href, baseUrl).href;
+      const base =
+        baseUrl && baseUrl !== "about:blank"
+          ? baseUrl
+          : this.currentFeedUrl || "https://localhost";
+      const resolved = new URL(href, base);
+      if (resolved.protocol === "http:" || resolved.protocol === "https:") {
+        return resolved.href;
+      }
+      return "";
     } catch {
-      return href;
+      return "";
     }
   }
 

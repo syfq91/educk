@@ -3,6 +3,11 @@ use tauri::{AppHandle, Manager};
 
 #[tauri::command]
 pub async fn read_book_file(app: AppHandle, path: String) -> Result<Vec<u8>, String> {
+    // Security: reject null bytes in path
+    if path.contains('\0') {
+        return Err("Invalid path: null byte detected".to_string());
+    }
+
     // Resolve the path relative to app data directory if it's a relative path
     let file_path = Path::new(&path);
 
@@ -27,6 +32,10 @@ pub async fn read_book_file(app: AppHandle, path: String) -> Result<Vec<u8>, Str
 
     if !canonical_path.starts_with(&canonical_app_data) {
         return Err("Access denied: path outside app data directory".to_string());
+    }
+
+    if !canonical_path.is_file() {
+        return Err("Access denied: target is not a regular file".to_string());
     }
 
     tokio::fs::read(&canonical_path)

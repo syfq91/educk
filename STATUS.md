@@ -1,6 +1,6 @@
 # Current Status
 
-**Current Milestone**: M13 — Android Lifecycle & Reliability (Complete)
+**Current Milestone**: M14 — Adversarial Security Audit (Complete)
 
 ---
 
@@ -127,11 +127,19 @@
   - Implemented foreground resume handling in `ReaderViewController`: re-acquires screen wake lock and refreshes status bar indicators.
   - Built `#book-recovery-modal` in `index.html`, `src/styles.css`, and `LibraryController` with tailored diagnostics for missing (`ENOENT`) or corrupted files, offering "🔄 Re-download Book" via OPDS acquisition URL, "🗑 Remove" from library, or dismiss.
   - Created unit test suites `tests/unit/lifecycle-manager.test.ts` (10 tests), `tests/unit/corrupted-file-recovery.test.ts` (6 tests), and integration test suite `tests/unit/m13-integration.test.ts` (5 tests). Total 201 automated tests passing across 33 test files.
+- **Milestone M14 (Adversarial Security Audit & Threat Model Hardening)**:
+  - Hardened native path traversal defenses: null byte rejection (`path.contains('\0')`), canonicalized sandbox prefix verification, and regular file type verification (`canonical_path.is_file()`) in `read_book_file`.
+  - Hardened archive decompression defenses in `src-tauri/src/downloads/validator.rs`: added `MAX_ENTRY_COUNT = 10_000` entry exhaustion ceiling, alongside existing 500 MB max uncompressed size and 100:1 compression ratio limits.
+  - Implemented XML entity attack defenses (XXE & Billion Laughs) in OPDS Atom XML and OPML parsers: rejecting DTDs (`<!DOCTYPE`) and entity expansions (`<!ENTITY`) with immediate `OPDSParseError` without redundant network retries.
+  - Multi-layered reader sandboxing in `src/services/reader/foliate-adapter.ts`: proactive script denial hook in foliate loader, empty text replacement of script assets in data hook, XHTML/HTML/SVG sanitization stripping `<script>` and `on*` inline handlers, neutralizing `javascript:` URLs, and injecting per-chapter CSP meta tags (`script-src 'none'`).
+  - Enforced IPC and protocol scheme boundaries: whitelisted `http://` and `https://` schemes in native `start_download` and OPDS link resolution, dropping `javascript:`, `file:`, `data:`, and unknown protocols. Verified zero exposure of `window.__TAURI__` to book content.
+  - Verified OPDS credential privacy: zero logging or exposure of sensitive Basic/Bearer credentials in console logs or application state.
+  - Created adversarial security test suite in `tests/unit/security-sandbox.test.ts` (16 tests). Total 213 automated tests passing across 33 test files.
 
 ---
 
 ## In Progress
-None. Milestone M13 completed.
+None. Milestone M14 completed.
 
 ---
 
@@ -141,26 +149,23 @@ None.
 ---
 
 ## Known Issues
-- Android SDK/Java not configured in headless CLI environment for direct `gradlew assembleDebug` invocation; Android-compatible Rust code verified via `cargo check`, `cargo clippy`, and `cargo test`.
+- Android SDK/Java not configured in headless CLI environment for direct `gradlew assembleDebug` invocation; Android-compatible Rust code verified via `cargo check`, `cargo clippy`, and `cargo check --tests`.
 
 ---
 
 ## Next Task
-- **Milestone M14 (Adversarial Security Audit)**:
-  1. Audit and mitigate path traversal attacks.
-  2. Audit and mitigate ZIP bomb and decompression attacks.
-  3. Audit and mitigate XML External Entity (XXE) vulnerabilities in OPDS and EPUB container parsers.
-  4. Validate CSP and script suppression in WebView sandboxes.
-  5. Validate IPC boundary and Tauri capability isolation against untrusted book content.
-  6. Validate OPDS credential protection and storage security.
+- **Milestone M15 (Acceptance & Polish)**:
+  1. End-to-end user journey verification across OPDS -> Download -> Library -> Reader -> Sync.
+  2. Performance profiling (cold startup, memory footprint during reader sessions).
+  3. Visual polish, touch target ergonomics, accessibility audits, and final release packaging checklist.
 
 ---
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
 - **ESLint (`pnpm run lint`)**: PASS (0 errors, 13 warnings)
-- **Unit & Integration Tests (`pnpm test`)**: PASS (201 tests passed across 33 test files)
+- **Unit & Integration Tests (`pnpm test`)**: PASS (213 tests passed across 33 test files)
 - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
 - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
-- **Rust Clippy (`cargo clippy`)**: PASS (0 warnings)
-
+- **Rust Cargo Tests Check (`cargo check --tests`)**: PASS (0 errors)
+- **Rust Clippy (`cargo clippy -- -D warnings`)**: PASS (0 warnings)

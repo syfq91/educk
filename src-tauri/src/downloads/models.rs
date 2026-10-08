@@ -63,6 +63,9 @@ pub enum DownloadError {
     #[error("Download was cancelled by user")]
     Cancelled,
 
+    #[error("Invalid or prohibited download URL: {0}")]
+    InvalidUrl(String),
+
     #[error("Filesystem I/O error: {0}")]
     Io(#[from] std::io::Error),
 }

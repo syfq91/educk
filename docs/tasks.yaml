@@ -347,7 +347,27 @@ tasks:
     milestone: M13
     description: Memory Pressure & Network Flapping Resilience (lifecycle memory cleanup hooks and non-blocking offline/online sync queue retry)
     status: done
-
-
-
-
+  - id: SEC-001
+    milestone: M14
+    description: Native Path Traversal Defenses (boundary canonicalization, null byte rejection, and regular file type verification in read_book_file)
+    status: done
+  - id: SEC-002
+    milestone: M14
+    description: ZIP Bomb & Archive Decompression Defenses (uncompressed size 500 MB ceiling, 100:1 compression ratio limit, and 10,000 entry count limit)
+    status: done
+  - id: SEC-003
+    milestone: M14
+    description: XML Entity Attack Defenses (reject DTD and entity declarations in OPDS Atom XML and OPML to block XXE and Billion Laughs)
+    status: done
+  - id: SEC-004
+    milestone: M14
+    description: Multi-Layered Reader Sandboxing (proactively deny script assets in foliate loader, strip script tags and inline event handlers, neutralize javascript: URLs, and inject per-chapter CSP meta tag)
+    status: done
+  - id: SEC-005
+    milestone: M14
+    description: IPC & Capability Boundaries (whitelist http/https schemes for downloads and OPDS feeds, isolate window.__TAURI__ from ebook contexts)
+    status: done
+  - id: SEC-006
+    milestone: M14
+    description: Credential Protection & Adversarial Security Test Suite (zero credential logging and comprehensive unit/integration test coverage)
+    status: done

@@ -76,6 +76,11 @@ export function parseOPML(opmlXml: string): OPMLOutline[] {
     throw new Error("Invalid OPML: empty content");
   }
 
+  // Defensive XML validation: reject DTD / external entities (XXE and entity expansion defense)
+  if (/<!DOCTYPE\b[^>]*>/i.test(opmlXml) || /<!ENTITY\b[^>]*>/i.test(opmlXml)) {
+    throw new Error("Prohibited DTD or entity declaration in OPML file (XXE defense)");
+  }
+
   // Use DOMParser if available (browser/happy-dom), fallback to regex
   if (typeof DOMParser !== "undefined") {
     const parser = new DOMParser();

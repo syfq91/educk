@@ -112,12 +112,48 @@ export class FoliateReaderAdapter implements Reader {
     // Security Hardening: suppress script execution in book resources
     const book = view.book;
     if (book?.transformTarget) {
+      // 1. Loader hook: proactively deny script assets
+      book.transformTarget.addEventListener("load", (event: Event) => {
+        const customEvent = event as CustomEvent<{ isScript?: boolean; allow?: boolean }>;
+        if (customEvent.detail?.isScript) {
+          customEvent.detail.allow = false;
+        }
+      });
+
+      // 2. Data hook: strip scripts, inline event attributes, and inject CSP into rendered documents
       book.transformTarget.addEventListener("data", (event: Event) => {
-        const customEvent = event as CustomEvent<{ name?: string; data?: unknown }>;
+        const customEvent = event as CustomEvent<{ name?: string; data?: unknown; type?: string }>;
         const name = customEvent.detail?.name?.toLowerCase() ?? "";
-        if (name.endsWith(".js") || name.endsWith(".mjs")) {
-          // Neutralize script assets by returning blank
+        const type = customEvent.detail?.type?.toLowerCase() ?? "";
+
+        // Neutralize dedicated script assets
+        if (name.endsWith(".js") || name.endsWith(".mjs") || type.includes("javascript")) {
           customEvent.detail.data = "";
+          customEvent.detail.type = "text/plain";
+          return;
+        }
+
+        // Sanitize XHTML/HTML/SVG documents
+        const isHtmlOrSvg =
+          name.endsWith(".xhtml") ||
+          name.endsWith(".html") ||
+          name.endsWith(".htm") ||
+          name.endsWith(".svg") ||
+          type.includes("html") ||
+          type.includes("svg");
+
+        if (isHtmlOrSvg && customEvent.detail?.data) {
+          const rawData = customEvent.detail.data;
+          if (typeof rawData === "string") {
+            customEvent.detail.data = sanitizeEbookContent(rawData);
+          } else if (rawData instanceof Promise) {
+            customEvent.detail.data = rawData.then((res: unknown) => {
+              if (typeof res === "string") {
+                return sanitizeEbookContent(res);
+              }
+              return res;
+            });
+          }
         }
       });
     }
@@ -429,4 +465,38 @@ export class FoliateReaderAdapter implements Reader {
 
     this.view.renderer.setStyles(css);
   }
+}
+
+/**
+ * Sanitizes untrusted ebook document content (HTML, XHTML, SVG):
+ * 1. Strips all <script>...</script> tags and unclosed <script> tags.
+ * 2. Strips all inline event attributes matching on* (onload, onerror, onclick, etc.).
+ * 3. Neutralizes javascript: URLs in href and src attributes.
+ * 4. Injects a restrictive Content Security Policy <meta> tag into the <head>.
+ */
+export function sanitizeEbookContent(content: string): string {
+  if (!content || typeof content !== "string") return content;
+
+  // 1. Remove all <script>...</script> tags and unclosed <script...>
+  let sanitized = content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script\s*>/gi, "");
+  sanitized = sanitized.replace(/<script\b[^>]*>/gi, "");
+
+  // 2. Remove all inline event handlers (onload, onerror, onclick, etc.)
+  sanitized = sanitized.replace(/\s+on[a-z0-9_-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+
+  // 3. Neutralize javascript: URLs in href and src
+  sanitized = sanitized.replace(/(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi, '$1=$2#$2');
+
+  // 4. Inject per-chapter Content Security Policy meta tag into <head>
+  const cspMeta =
+    '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src blob: data: \'self\'; style-src \'unsafe-inline\'; script-src \'none\'; frame-src \'none\';" />';
+  if (/<head\b[^>]*>/i.test(sanitized)) {
+    sanitized = sanitized.replace(/<head\b[^>]*>/i, (match) => `${match}\n    ${cspMeta}`);
+  } else if (/<html\b[^>]*>/i.test(sanitized)) {
+    sanitized = sanitized.replace(/<html\b[^>]*>/i, (match) => `${match}\n<head>${cspMeta}</head>`);
+  } else {
+    sanitized = `<head>${cspMeta}</head>\n${sanitized}`;
+  }
+
+  return sanitized;
 }
