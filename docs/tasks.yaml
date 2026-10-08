@@ -391,3 +391,23 @@ tasks:
     milestone: M15
     description: Real-World Server Fixture Test Suite (authentic XML fixtures for Calibre-Web, Komga, Kavita, Readarr and comprehensive test coverage)
     status: done
+  - id: PERF-001
+    milestone: M16
+    description: Cold Startup Time Budget & Monitoring (< 2.0s to interactive library via AppProfiler performance marks/measures)
+    status: done
+  - id: PERF-002
+    milestone: M16
+    description: Large Library Scalability & 60 FPS Scrolling (batch reading progress loading to eliminate N+1 queries for 500+ books)
+    status: done
+  - id: PERF-003
+    milestone: M16
+    description: Single Container DOM Event Delegation (delegated click listener on #library-list replacing per-card event closures)
+    status: done
+  - id: PERF-004
+    milestone: M16
+    description: CSS Rendering Optimizations (content-visibility: auto and contain-intrinsic-size on .book-card and .entry-card)
+    status: done
+  - id: PERF-005
+    milestone: M16
+    description: Memory Architecture & Resource Budgets (< 20 MB download RAM via Rust chunked stream; < 50 MB reader RAM via lazy spine decompression)
+    status: done

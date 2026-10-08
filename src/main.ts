@@ -13,6 +13,7 @@ import {
   type ProgressionConflict,
 } from "./services/progression/index.ts";
 import { AppLifecycleManager } from "./services/lifecycle/lifecycle-manager.ts";
+import { AppProfiler } from "./services/performance/profiler.ts";
 import type { ReaderSettings, ReaderTheme, ReaderFontFamily } from "./domain/reader.ts";
 import type { Book } from "./domain/database.ts";
 
@@ -764,8 +765,12 @@ function setupCatalogs(
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
+  const profiler = AppProfiler.getInstance();
+  profiler.markColdStart();
+
   setupNavigation();
   const dbRepos = await initDatabase();
+  profiler.markDatabaseReady();
 
   const progressionClient = createProgressionClient();
   if (dbRepos) {
@@ -799,8 +804,15 @@ window.addEventListener("DOMContentLoaded", async () => {
   const downloadService = new TauriDownloadService();
   setupDownloadManager(dbRepos, downloadService);
   setupLibrary(dbRepos, readerController, getReaderElements());
+  profiler.markLibraryReady();
+
   setupCatalogs(dbRepos, downloadService);
   setupSettingsView(dbRepos, readerController);
+
+  const startupMetrics = profiler.measureStartup();
+  console.log(
+    `[Perf] Cold startup: ${Math.round(startupMetrics.totalColdStartMs)}ms (DB: ${Math.round(startupMetrics.dbInitMs)}ms, Library: ${Math.round(startupMetrics.libraryRenderMs)}ms)`,
+  );
 
   // Milestone M13 App Lifecycle Manager
   new AppLifecycleManager({

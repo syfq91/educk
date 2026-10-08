@@ -91,6 +91,25 @@ export class LibraryController {
     this.elements.refreshBtn.addEventListener("click", () => {
       this.loadBooks();
     });
+
+    // Milestone M16: Single delegated click listener on container list
+    // Eliminates thousands of per-card event closures and listener registrations
+    this.elements.list.addEventListener("click", async (e) => {
+      const target = e.target as HTMLElement;
+      const card = target.closest<HTMLElement>(".book-card");
+      if (!card) return;
+      const bookId = card.dataset.bookId;
+      if (!bookId) return;
+
+      const deleteBtn = target.closest<HTMLButtonElement>(".btn-delete");
+      if (deleteBtn) {
+        e.stopPropagation();
+        await this.deleteBook(bookId);
+        return;
+      }
+
+      await this.openBook(bookId).catch(() => {});
+    });
   }
 
   async loadBooks(): Promise<void> {
@@ -122,20 +141,30 @@ export class LibraryController {
 
     this.showEmptyState(false);
 
-    // Load progress for all books
-    const booksWithProgress = await Promise.all(
-      books.map(async (book) => {
-        const progress = await this.progressRepo.findByBookId(book.id);
-        return { book, progress: mapDbProgressToPosition(progress) };
-      }),
-    );
+    // Milestone M16: Batch load progress in a single query to eliminate N+1 query overhead
+    const progressMap = new Map<string, DbReadingProgress>();
+    if (typeof this.progressRepo.findAll === "function") {
+      const allProgress = await this.progressRepo.findAll();
+      for (const p of allProgress) {
+        progressMap.set(p.bookId, p);
+      }
+    } else {
+      const progressEntries = await Promise.all(
+        books.map((book) => this.progressRepo.findByBookId(book.id)),
+      );
+      for (const p of progressEntries) {
+        if (p) progressMap.set(p.bookId, p);
+      }
+    }
+
+    const booksWithProgress = books.map((book) => ({
+      book,
+      progress: mapDbProgressToPosition(progressMap.get(book.id) || null),
+    }));
 
     this.elements.list.innerHTML = booksWithProgress
       .map(({ book, progress }) => this.createBookCard(book, progress))
       .join("");
-
-    // Attach event listeners
-    this.attachBookCardListeners();
   }
 
   private createBookCard(book: Book, progress: ReadingPosition | null): string {
@@ -181,50 +210,6 @@ export class LibraryController {
         </div>
       </article>
     `;
-  }
-
-  private attachBookCardListeners(): void {
-    // Open book buttons
-    this.elements.list.querySelectorAll<HTMLButtonElement>(".btn-open").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const card = btn.closest(".book-card") as HTMLElement | null;
-        if (card) {
-          const bookId = card.dataset.bookId;
-          if (bookId) {
-            this.openBook(bookId).catch(() => {
-              // Error handled via callbacks.onError and markBookMissing
-            });
-          }
-        }
-      });
-    });
-
-    // Delete book buttons
-    this.elements.list.querySelectorAll<HTMLButtonElement>(".btn-delete").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        const card = btn.closest(".book-card") as HTMLElement | null;
-        if (card) {
-          const bookId = card.dataset.bookId;
-          if (bookId) await this.deleteBook(bookId);
-        }
-      });
-    });
-
-    // Click on card (excluding buttons) to open
-    this.elements.list.querySelectorAll<HTMLElement>(".book-card").forEach((card) => {
-      card.addEventListener("click", (e) => {
-        if (!(e.target as HTMLElement).closest("button")) {
-          const bookId = card.dataset.bookId;
-          if (bookId) {
-            this.openBook(bookId).catch(() => {
-              // Error handled via callbacks.onError and markBookMissing
-            });
-          }
-        }
-      });
-    });
   }
 
   async openBook(bookId: string): Promise<void> {

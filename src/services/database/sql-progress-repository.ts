@@ -71,4 +71,14 @@ export class SqlProgressRepository implements ProgressRepository {
       [bookId],
     );
   }
+
+  public async findAll(): Promise<ReadingProgress[]> {
+    const rows = await this.db.select<ProgressRow[]>(
+      'SELECT * FROM reading_progress;',
+    );
+    if (!rows || rows.length === 0) {
+      return [];
+    }
+    return rows.map((row) => this.mapRowToProgress(row));
+  }
 }

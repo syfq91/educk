@@ -893,6 +893,8 @@ html, body {
 }
 
 .book-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 112px;
   display: grid;
   grid-template-columns: 64px 1fr 72px;
   gap: 1rem;
@@ -1521,6 +1523,8 @@ html, body {
 
 /* List Card */
 .feed-list.view-list .entry-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 90px;
   display: grid;
   grid-template-columns: 56px 1fr;
   gap: 0.75rem;
@@ -1539,6 +1543,8 @@ html, body {
 
 /* Grid Card (Milestone M8) */
 .feed-list.view-grid .entry-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 240px;
   display: flex;
   flex-direction: column;
   background-color: var(--bg-card);

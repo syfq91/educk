@@ -94,6 +94,7 @@ export interface ProgressRepository {
   findByBookId(bookId: string): Promise<ReadingProgress | null>;
   upsert(progress: ReadingProgress): Promise<void>;
   delete(bookId: string): Promise<void>;
+  findAll?(): Promise<ReadingProgress[]>;
 }
 
 export interface SyncStateRepository {

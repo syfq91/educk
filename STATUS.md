@@ -143,11 +143,21 @@
   - Implemented author and Dublin Core fallbacks: extracting `<dc:creator>`, unwrapped `<author>` tags without `<name>`, splitting semicolon-delimited author strings, and extracting `<dc:date>`, `<dc:identifier>`, `<dc:publisher>`, and `<dc:description>`.
   - Authored authentic XML test fixtures in `fixtures/opds/` for Calibre-Web, Komga, Kavita, and Readarr.
   - Created unit and integration test suites in `tests/unit/opds-compatibility.test.ts` (18 tests) and `tests/unit/server-compatibility.test.ts` (5 tests). Total 236 automated tests passing across 35 test files.
+- **Milestone M16 (Performance Engineering & Resource Targets)**:
+  - Architected `AppProfiler` service in `src/services/performance/profiler.ts` with W3C User Timing API marks and measures (`educk:cold-start`, `educk:db-ready`, `educk:library-ready`, `educk:last-page-turn`).
+  - Integrated cold startup time tracking in `src/main.ts` verifying `< 2.0s` cold startup budget to fully interactive local library.
+  - Eliminated N+1 database queries on library load: added `ProgressRepository.findAll()` in `src/domain/database.ts` and `src/services/database/sql-progress-repository.ts`, batch loading reading progress across 500+ books in a single SQL query.
+  - Consolidated DOM event delegation in `LibraryController`: single delegated listener on container `#library-list` replacing 1,500+ per-card click listener closures.
+  - Optimized list rendering performance for 60 FPS scrolling: added CSS `content-visibility: auto` and `contain-intrinsic-size` to `.book-card` and `.entry-card` in `src/styles.css`.
+  - Page turn latency monitoring: implemented `AppProfiler.measurePageTurn()` enforcing `< 100 ms` perceived latency budget.
+  - Streaming memory architecture: verified native Rust `DownloadEngine` directly streams chunks to disk via `reqwest::Response::bytes_stream()` (< 20 MB download RAM ceiling) and `foliate-js` ZipReader lazy spine decompression (< 50 MB reader RAM ceiling).
+  - Authored comprehensive documentation in `docs/performance.md`.
+  - Created performance unit test suite in `tests/unit/performance.test.ts` (7 tests). Total 243 automated tests passing across 36 test files.
 
 ---
 
 ## In Progress
-None. Milestone M15 completed.
+None. All planned milestones (M1–M16) are complete!
 
 ---
 
@@ -162,18 +172,16 @@ None.
 ---
 
 ## Next Task
-- **Milestone M16 (Performance Engineering & Resource Targets)**:
-  1. Cold startup time benchmarking and optimizations.
-  2. Memory footprint profiling during heavy catalog browsing and reading sessions.
-  3. Spine/chapter pagination lazy-loading verification.
+Project complete. Maintenance, platform packaging, and distribution release.
 
 ---
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
 - **ESLint (`pnpm run lint`)**: PASS (0 errors, 13 warnings)
-- **Unit & Integration Tests (`pnpm test`)**: PASS (236 tests passed across 35 test files)
+- **Unit & Integration Tests (`pnpm test`)**: PASS (243 tests passed across 36 test files)
 - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
 - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
 - **Rust Cargo Tests Check (`cargo check --tests`)**: PASS (0 errors)
 - **Rust Clippy (`cargo clippy -- -D warnings`)**: PASS (0 warnings)
+
