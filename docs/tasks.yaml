@@ -299,6 +299,30 @@ tasks:
     milestone: M11
     description: Create comprehensive unit and integration test suites covering ProgressionClient, sync manager, and offline queue
     status: done
+  - id: RDR-001
+    milestone: M12
+    description: Implement touch gestures, 3-zone tap surface, and immersive reading mode with animated toolbar toggle
+    status: done
+  - id: RDR-002
+    milestone: M12
+    description: Add live status display with tabular system clock and battery level indicator via navigator.getBattery
+    status: done
+  - id: RDR-003
+    milestone: M12
+    description: Integrate screen wake lock API (navigator.wakeLock) during active reading with automatic pause/resume
+    status: done
+  - id: RDR-004
+    milestone: M12
+    description: Add continuous font size slider (12px–36px) synced with A-/A+ buttons and OpenDyslexic accessible font family
+    status: done
+  - id: RDR-005
+    milestone: M12
+    description: Implement pitch-black AMOLED theme (#000000) for OLED mobile battery savings alongside Light, Sepia, and Dark
+    status: done
+  - id: RDR-006
+    milestone: M12
+    description: Persist reader typography, margin, and theme preferences to SQLite SettingsRepository and synchronize with app Settings tab
+    status: done
 
 
 

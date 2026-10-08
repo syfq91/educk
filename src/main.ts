@@ -12,7 +12,7 @@ import {
   type ProgressionSyncManager,
   type ProgressionConflict,
 } from "./services/progression/index.ts";
-import type { ReaderSettings } from "./domain/reader.ts";
+import type { ReaderSettings, ReaderTheme, ReaderFontFamily } from "./domain/reader.ts";
 import type { Book } from "./domain/database.ts";
 
 let readerController: ReaderViewController | null = null;
@@ -98,11 +98,8 @@ function showConflictBanner(conflict: ProgressionConflict): void {
   banner.classList.remove("hidden");
 }
 
-// Production Reader View Controller Initialization
-function setupReader(
-  progressManager: LocalProgressManager | null,
-  syncManager: ProgressionSyncManager | null = null,
-): void {
+// Helper to collect Reader UI elements from the DOM
+function getReaderElements(): ReaderViewElements | null {
   const overlay = document.querySelector<HTMLElement>("#reader-view");
   const mount = document.querySelector<HTMLElement>("#reader-mount");
   const backBtn = document.querySelector<HTMLButtonElement>("#reader-btn-back");
@@ -131,6 +128,10 @@ function setupReader(
   const tapZoneLeft = document.querySelector<HTMLElement>("#tap-zone-left") ?? undefined;
   const tapZoneCenter = document.querySelector<HTMLElement>("#tap-zone-center") ?? undefined;
   const tapZoneRight = document.querySelector<HTMLElement>("#tap-zone-right") ?? undefined;
+  const clockDisplay = document.querySelector<HTMLElement>("#reader-clock") ?? undefined;
+  const batteryDisplay = document.querySelector<HTMLElement>("#reader-battery") ?? undefined;
+  const fontSizeSlider = document.querySelector<HTMLInputElement>("#slider-font-size") ?? undefined;
+  const settingsFontSizeLabel = document.querySelector<HTMLElement>("#settings-font-size-label") ?? undefined;
 
   if (
     !overlay ||
@@ -155,11 +156,10 @@ function setupReader(
     !smallerFontBtn ||
     !largerFontBtn
   ) {
-    console.error("Required Reader DOM elements not found.");
-    return;
+    return null;
   }
 
-  const elements: ReaderViewElements = {
+  return {
     overlay,
     mount,
     backBtn,
@@ -188,7 +188,88 @@ function setupReader(
     tapZoneLeft,
     tapZoneCenter,
     tapZoneRight,
+    clockDisplay,
+    batteryDisplay,
+    fontSizeSlider,
+    settingsFontSizeLabel,
   };
+}
+
+// Synchronize global Settings tab UI inputs with reader settings
+function syncSettingsView(settings: ReaderSettings): void {
+  const themeSelect = document.querySelector<HTMLSelectElement>("#pref-theme");
+  const fontSelect = document.querySelector<HTMLSelectElement>("#pref-font-family");
+  const fontSizeInput = document.querySelector<HTMLInputElement>("#pref-font-size");
+  const fontSizeVal = document.querySelector<HTMLElement>("#pref-font-size-val");
+  const lineSpacingSelect = document.querySelector<HTMLSelectElement>("#pref-line-spacing");
+  const marginSelect = document.querySelector<HTMLSelectElement>("#pref-margin");
+
+  if (themeSelect) themeSelect.value = settings.theme;
+  if (fontSelect) fontSelect.value = settings.fontFamily;
+  if (fontSizeInput) fontSizeInput.value = String(settings.fontSize);
+  if (fontSizeVal) fontSizeVal.textContent = `${settings.fontSize}px`;
+  if (lineSpacingSelect) lineSpacingSelect.value = String(settings.lineSpacing);
+  if (marginSelect) marginSelect.value = settings.margin;
+}
+
+// Setup Settings Tab reader preference controls
+function setupSettingsView(
+  repositories: DatabaseRepositories | null,
+  readerCtrl: ReaderViewController | null,
+): void {
+  const themeSelect = document.querySelector<HTMLSelectElement>("#pref-theme");
+  const fontSelect = document.querySelector<HTMLSelectElement>("#pref-font-family");
+  const fontSizeInput = document.querySelector<HTMLInputElement>("#pref-font-size");
+  const fontSizeVal = document.querySelector<HTMLElement>("#pref-font-size-val");
+  const lineSpacingSelect = document.querySelector<HTMLSelectElement>("#pref-line-spacing");
+  const marginSelect = document.querySelector<HTMLSelectElement>("#pref-margin");
+
+  const saveAndApply = () => {
+    const current = readerCtrl?.getSettings() ?? {
+      theme: "light" as const,
+      fontSize: 18,
+      lineSpacing: 1.5,
+      fontFamily: "sans-serif" as const,
+      margin: "normal" as const,
+    };
+
+    const newSettings: ReaderSettings = {
+      theme: (themeSelect?.value as ReaderTheme) || current.theme,
+      fontFamily: (fontSelect?.value as ReaderFontFamily) || current.fontFamily,
+      fontSize: fontSizeInput ? parseInt(fontSizeInput.value, 10) || current.fontSize : current.fontSize,
+      lineSpacing: lineSpacingSelect ? parseFloat(lineSpacingSelect.value) || current.lineSpacing : current.lineSpacing,
+      margin: (marginSelect?.value as "narrow" | "normal" | "wide") || current.margin,
+    };
+
+    readerCtrl?.applySettings(newSettings);
+    if (repositories) {
+      void repositories.settings.setJSON("reader.settings", newSettings);
+    }
+  };
+
+  themeSelect?.addEventListener("change", saveAndApply);
+  fontSelect?.addEventListener("change", saveAndApply);
+  lineSpacingSelect?.addEventListener("change", saveAndApply);
+  marginSelect?.addEventListener("change", saveAndApply);
+
+  fontSizeInput?.addEventListener("input", () => {
+    if (fontSizeVal) {
+      fontSizeVal.textContent = `${fontSizeInput.value}px`;
+    }
+    saveAndApply();
+  });
+}
+
+// Production Reader View Controller Initialization
+function setupReader(
+  progressManager: LocalProgressManager | null,
+  syncManager: ProgressionSyncManager | null = null,
+): void {
+  const elements = getReaderElements();
+  if (!elements) {
+    console.error("Required Reader DOM elements not found.");
+    return;
+  }
 
   readerController = new ReaderViewController(
     elements,
@@ -204,6 +285,7 @@ function setupReader(
         if (repos) {
           void repos.settings.setJSON("reader.settings", settings);
         }
+        syncSettingsView(settings);
       },
       onPositionChange: (position, bookId) => {
         if (bookId) {
@@ -239,6 +321,7 @@ function setupReader(
     void repos.settings.getJSON<ReaderSettings>("reader.settings").then((savedSettings) => {
       if (savedSettings) {
         readerController?.applySettings(savedSettings);
+        syncSettingsView(savedSettings);
       }
     });
   }
@@ -673,37 +756,9 @@ window.addEventListener("DOMContentLoaded", async () => {
   setupReader(progressManager, progressionSyncManager);
   const downloadService = new TauriDownloadService();
   setupDownloadManager(dbRepos, downloadService);
-  setupLibrary(dbRepos, readerController, {
-    overlay: document.querySelector<HTMLElement>("#reader-view")!,
-    mount: document.querySelector<HTMLElement>("#reader-mount")!,
-    backBtn: document.querySelector<HTMLButtonElement>("#reader-btn-back")!,
-    title: document.querySelector<HTMLElement>("#reader-title")!,
-    chapter: document.querySelector<HTMLElement>("#reader-chapter")!,
-    progressBadge: document.querySelector<HTMLElement>("#reader-progress-badge")!,
-    cfiDisplay: document.querySelector<HTMLElement>("#reader-cfi")!,
-    tocBtn: document.querySelector<HTMLButtonElement>("#reader-btn-toc")!,
-    tocDrawer: document.querySelector<HTMLElement>("#reader-toc-drawer")!,
-    tocList: document.querySelector<HTMLElement>("#reader-toc-list")!,
-    tocBackdrop: document.querySelector<HTMLElement>("#reader-backdrop")!,
-    tocCloseBtn: document.querySelector<HTMLButtonElement>("#btn-close-toc")!,
-    settingsBtn: document.querySelector<HTMLButtonElement>("#reader-btn-settings")!,
-    settingsDrawer: document.querySelector<HTMLElement>("#reader-settings-drawer")!,
-    settingsCloseBtn: document.querySelector<HTMLButtonElement>("#btn-close-settings")!,
-    prevBtn: document.querySelector<HTMLButtonElement>("#reader-btn-prev")!,
-    nextBtn: document.querySelector<HTMLButtonElement>("#reader-btn-next")!,
-    slider: document.querySelector<HTMLInputElement>("#reader-progress-slider")!,
-    themeButtons: document.querySelectorAll<HTMLButtonElement>(".theme-btn"),
-    fontSizeLabel: document.querySelector<HTMLElement>("#font-size-val")!,
-    smallerFontBtn: document.querySelector<HTMLButtonElement>("#btn-font-smaller")!,
-    largerFontBtn: document.querySelector<HTMLButtonElement>("#btn-font-larger")!,
-    fontFamilySelect: document.querySelector<HTMLSelectElement>("#select-font-family") ?? undefined,
-    lineSpacingSelect: document.querySelector<HTMLSelectElement>("#select-line-spacing") ?? undefined,
-    marginSelect: document.querySelector<HTMLSelectElement>("#select-margin") ?? undefined,
-    tapZoneLeft: document.querySelector<HTMLElement>("#tap-zone-left") ?? undefined,
-    tapZoneCenter: document.querySelector<HTMLElement>("#tap-zone-center") ?? undefined,
-    tapZoneRight: document.querySelector<HTMLElement>("#tap-zone-right") ?? undefined,
-  });
+  setupLibrary(dbRepos, readerController, getReaderElements());
   setupCatalogs(dbRepos, downloadService);
+  setupSettingsView(dbRepos, readerController);
 
   // Background retry when network connectivity is regained
   window.addEventListener("online", () => {

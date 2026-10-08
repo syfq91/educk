@@ -1,6 +1,6 @@
 # Current Status
 
-**Current Milestone**: M11 — OPDS Progression 1.0 Synchronization (Complete)
+**Current Milestone**: M12 — Reader UX & Settings (Complete)
 
 ---
 
@@ -87,9 +87,6 @@
   - Verified offline reading availability: local EPUBs open with zero network overhead via `read_book_file` Tauri IPC command, preserving sandboxing and privacy.
   - Shared a singleton `TauriDownloadService` across application controllers (`LibraryController` and `CatalogsController`), preventing redundant listeners and event conflicts.
   - Created integration test suite `tests/unit/m9-integration.test.ts` (6 tests) validating full acquisition pipeline, pre-download detection, live progress events, modal transitions, offline zero-overhead reading, and network failure resilience. Total 127 automated frontend tests passing across 23 test files.
-
----
-
 - **Milestone M10 (Local Reading Progress)**:
   - Created dedicated Reading Progress domain contracts and defensive validators in `src/domain/progress.ts` (`ProgressUpdate`, `ProgressManager`, `sanitizeProgression`, `isValidCfi`, `validateProgressUpdate`).
   - Implemented `LocalProgressManager` in `src/services/progress/local-progress-manager.ts` providing 1000ms debouncing for rapid page turns to prevent disk thrashing and SQLite lock contention.
@@ -113,11 +110,20 @@
   - Wired background sync triggers in `src/main.ts`: cold-open background sync on book open from library bookshelf, debounced progress push during reading, reader close/backgrounding sync, and global `online` event queue flushing (`syncQueue()`).
   - Guaranteed strict non-blocking invariant: reading page turns and reader UI navigation never await or block on network I/O.
   - Created unit test suites `tests/unit/progression-client.test.ts` (12 tests), `tests/unit/progression-sync-manager.test.ts` (13 tests), and integration test suite `tests/unit/m11-integration.test.ts` (5 tests). Total 170 automated tests passing across 28 test files.
+- **Milestone M12 (Reader UX & Settings)**:
+  - Implemented 3-zone tap navigation surface and smooth immersive mode toolbar toggling (`.bars-hidden`).
+  - Integrated status indicators with live system clock display and battery status badge (`navigator.getBattery` tracking charging and level percentage).
+  - Integrated Screen Wake Lock API (`navigator.wakeLock`) during active reading sessions with lifecycle pause on app backgrounding and release on reader close/destroy.
+  - Added continuous typography font size slider (12px to 36px) bidirectionally synced with A- / A+ buttons and live labels.
+  - Added `OpenDyslexic` accessible font family support in `FoliateReaderAdapter` with specialized letter and word spacing.
+  - Added true pitch-black AMOLED theme (`#000000`, `theme-amoled`) for maximum OLED battery savings on mobile displays.
+  - Added comprehensive Reader Preferences panel to the global Settings tab, synchronizing defaults with the reader drawer and SQLite `SettingsRepository` in real-time.
+  - Created unit test suite `tests/unit/reader-ux.test.ts` (8 tests) and integration test suite `tests/unit/m12-integration.test.ts` (2 tests). Total 180 automated tests passing across 30 test files.
 
 ---
 
 ## In Progress
-None. Milestone M11 completed.
+None. Milestone M12 completed.
 
 ---
 
@@ -132,19 +138,18 @@ None.
 ---
 
 ## Next Task
-- **Milestone M12 (Production Hardening & Release Preparation)**:
-  1. End-to-end regression validation.
-  2. Performance profiling and memory audit.
-  3. Security audit (CSP, sandbox permissions, path validation).
-  4. Final release documentation and Android release packaging.
+- **Final Polish & Release**:
+  1. Performance profiling and memory audit.
+  2. Security audit (CSP, sandbox permissions, path validation).
+  3. Release documentation and release build verification.
 
 ---
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
-- **ESLint (`pnpm run lint`)**: PASS (0 errors, 13 warnings)
-- **Unit & Integration Tests (`pnpm test`)**: PASS (170 tests passed across 28 test files)
-- **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
-- **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
-- **Rust Clippy (`cargo clippy`)**: PASS (0 warnings)
+  - **ESLint (`pnpm run lint`)**: PASS (0 errors, 13 warnings)
+  - **Unit & Integration Tests (`pnpm test`)**: PASS (180 tests passed across 30 test files)
+  - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
+  - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
+  - **Rust Clippy (`cargo clippy`)**: PASS (0 warnings)
 

@@ -342,7 +342,7 @@ describe("Milestone M10 Integration: Local Reading Progress", () => {
     document.dispatchEvent(new Event("visibilitychange"));
 
     // Flush should execute immediately
-    await vi.runAllTimersAsync();
+    await vi.advanceTimersByTimeAsync(1500);
 
     expect(mockProgressRepo.upsert).toHaveBeenCalledWith(
       expect.objectContaining({

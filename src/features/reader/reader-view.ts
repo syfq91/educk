@@ -51,6 +51,17 @@ export interface ReaderViewElements {
   tapZoneLeft?: HTMLElement;
   tapZoneCenter?: HTMLElement;
   tapZoneRight?: HTMLElement;
+  clockDisplay?: HTMLElement;
+  batteryDisplay?: HTMLElement;
+  fontSizeSlider?: HTMLInputElement;
+  settingsFontSizeLabel?: HTMLElement;
+}
+
+interface BatteryManagerLike {
+  level: number;
+  charging: boolean;
+  addEventListener: (event: string, handler: () => void) => void;
+  removeEventListener?: (event: string, handler: () => void) => void;
 }
 
 export interface ReaderViewCallbacks {
@@ -70,6 +81,10 @@ export class ReaderViewController {
   private touchStartX = 0;
   private touchStartY = 0;
   private barsVisible = true;
+  private clockInterval: ReturnType<typeof setInterval> | null = null;
+  private batteryManager: BatteryManagerLike | null = null;
+  private onBatteryChange: (() => void) | null = null;
+  private wakeLockSentinel: { release: () => Promise<void> } | null = null;
 
   constructor(
     elements: ReaderViewElements,
@@ -88,6 +103,9 @@ export class ReaderViewController {
 
     this.bindEvents();
     this.syncSettingsUi();
+    this.updateClock();
+    this.clockInterval = setInterval(() => this.updateClock(), 30000);
+    void this.initBattery();
   }
 
   public getReader(): Reader | null {
@@ -102,6 +120,8 @@ export class ReaderViewController {
     this.elements.overlay.classList.remove("hidden");
     this.elements.title.textContent = "Loading book...";
     this.elements.cfiDisplay.textContent = "initializing...";
+    this.updateClock();
+    void this.acquireWakeLock();
     this.setBarsVisible(true);
 
     if (!this.reader) {
@@ -162,6 +182,7 @@ export class ReaderViewController {
   }
 
   public async close(): Promise<void> {
+    void this.releaseWakeLock();
     if (this.callbacks.onBeforeClose) {
       try {
         await this.callbacks.onBeforeClose();
@@ -204,6 +225,12 @@ export class ReaderViewController {
 
   public syncSettingsUi(): void {
     this.elements.fontSizeLabel.textContent = `${this.settings.fontSize}px`;
+    if (this.elements.fontSizeSlider) {
+      this.elements.fontSizeSlider.value = String(this.settings.fontSize);
+    }
+    if (this.elements.settingsFontSizeLabel) {
+      this.elements.settingsFontSizeLabel.textContent = `${this.settings.fontSize}px`;
+    }
     if (this.elements.fontFamilySelect) {
       this.elements.fontFamilySelect.value = this.settings.fontFamily;
     }
@@ -225,11 +252,97 @@ export class ReaderViewController {
       light: { bg: "#ffffff", text: "#1a1a1a" },
       dark: { bg: "#121212", text: "#e0e0e0" },
       sepia: { bg: "#f4ecd8", text: "#3d2b1f" },
+      amoled: { bg: "#000000", text: "#d4d4d4" },
     };
     const t = this.settings.theme;
     if (themeBg[t]) {
       this.elements.overlay.style.backgroundColor = themeBg[t].bg;
       this.elements.overlay.style.color = themeBg[t].text;
+    }
+
+    if (t === "amoled") {
+      this.elements.overlay.classList.add("theme-amoled");
+    } else {
+      this.elements.overlay.classList.remove("theme-amoled");
+    }
+  }
+
+  private updateClock(): void {
+    if (this.elements.clockDisplay) {
+      const now = new Date();
+      this.elements.clockDisplay.textContent = now.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  }
+
+  private async initBattery(): Promise<void> {
+    if (typeof navigator !== "undefined" && "getBattery" in navigator) {
+      try {
+        const nav = navigator as unknown as { getBattery: () => Promise<BatteryManagerLike> };
+        if (typeof nav.getBattery === "function") {
+          const battery = await nav.getBattery();
+          this.batteryManager = battery;
+          this.onBatteryChange = () => {
+            if (this.elements.batteryDisplay) {
+              const pct = Math.round(battery.level * 100);
+              const icon = battery.charging ? "⚡" : "🔋";
+              this.elements.batteryDisplay.textContent = `${icon} ${pct}%`;
+              this.elements.batteryDisplay.classList.remove("hidden");
+            }
+          };
+          this.onBatteryChange();
+          battery.addEventListener("levelchange", this.onBatteryChange);
+          battery.addEventListener("chargingchange", this.onBatteryChange);
+        }
+      } catch {
+        // Battery status not accessible
+      }
+    }
+  }
+
+  private async acquireWakeLock(): Promise<void> {
+    if (typeof navigator !== "undefined" && "wakeLock" in navigator) {
+      try {
+        const nav = navigator as unknown as {
+          wakeLock: { request: (type: string) => Promise<{ release: () => Promise<void> }> };
+        };
+        if (nav.wakeLock && typeof nav.wakeLock.request === "function") {
+          this.wakeLockSentinel = await nav.wakeLock.request("screen");
+        }
+      } catch {
+        // WakeLock request denied or unsupported
+      }
+    }
+  }
+
+  private async releaseWakeLock(): Promise<void> {
+    if (this.wakeLockSentinel) {
+      try {
+        await this.wakeLockSentinel.release();
+      } catch {
+        // Ignore release errors
+      }
+      this.wakeLockSentinel = null;
+    }
+  }
+
+  public destroy(): void {
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+      this.clockInterval = null;
+    }
+    if (this.batteryManager && this.onBatteryChange) {
+      this.batteryManager.removeEventListener?.("levelchange", this.onBatteryChange);
+      this.batteryManager.removeEventListener?.("chargingchange", this.onBatteryChange);
+      this.batteryManager = null;
+      this.onBatteryChange = null;
+    }
+    void this.releaseWakeLock();
+    if (this.reader) {
+      this.reader.destroy();
+      this.reader = null;
     }
   }
 
@@ -369,9 +482,28 @@ export class ReaderViewController {
     }, { passive: true });
 
     // Font size controls
+    this.elements.fontSizeSlider?.addEventListener("input", () => {
+      const val = parseInt(this.elements.fontSizeSlider!.value, 10);
+      if (!isNaN(val)) {
+        this.settings.fontSize = Math.max(12, Math.min(36, val));
+        this.elements.fontSizeLabel.textContent = `${this.settings.fontSize}px`;
+        if (this.elements.settingsFontSizeLabel) {
+          this.elements.settingsFontSizeLabel.textContent = `${this.settings.fontSize}px`;
+        }
+        void this.reader?.setFontSize(this.settings.fontSize);
+        this.callbacks.onSettingsChange?.(this.settings);
+      }
+    });
+
     this.elements.smallerFontBtn.addEventListener("click", () => {
       this.settings.fontSize = Math.max(12, this.settings.fontSize - 2);
       this.elements.fontSizeLabel.textContent = `${this.settings.fontSize}px`;
+      if (this.elements.fontSizeSlider) {
+        this.elements.fontSizeSlider.value = String(this.settings.fontSize);
+      }
+      if (this.elements.settingsFontSizeLabel) {
+        this.elements.settingsFontSizeLabel.textContent = `${this.settings.fontSize}px`;
+      }
       void this.reader?.setFontSize(this.settings.fontSize);
       this.callbacks.onSettingsChange?.(this.settings);
     });
@@ -379,6 +511,12 @@ export class ReaderViewController {
     this.elements.largerFontBtn.addEventListener("click", () => {
       this.settings.fontSize = Math.min(36, this.settings.fontSize + 2);
       this.elements.fontSizeLabel.textContent = `${this.settings.fontSize}px`;
+      if (this.elements.fontSizeSlider) {
+        this.elements.fontSizeSlider.value = String(this.settings.fontSize);
+      }
+      if (this.elements.settingsFontSizeLabel) {
+        this.elements.settingsFontSizeLabel.textContent = `${this.settings.fontSize}px`;
+      }
       void this.reader?.setFontSize(this.settings.fontSize);
       this.callbacks.onSettingsChange?.(this.settings);
     });
@@ -396,13 +534,29 @@ export class ReaderViewController {
           light: { bg: "#ffffff", text: "#1a1a1a" },
           dark: { bg: "#121212", text: "#e0e0e0" },
           sepia: { bg: "#f4ecd8", text: "#3d2b1f" },
+          amoled: { bg: "#000000", text: "#d4d4d4" },
         };
-        this.elements.overlay.style.backgroundColor = themeBg[theme].bg;
-        this.elements.overlay.style.color = themeBg[theme].text;
+        const tBg = themeBg[theme] || themeBg.light;
+        this.elements.overlay.style.backgroundColor = tBg.bg;
+        this.elements.overlay.style.color = tBg.text;
+        if (theme === "amoled") {
+          this.elements.overlay.classList.add("theme-amoled");
+        } else {
+          this.elements.overlay.classList.remove("theme-amoled");
+        }
 
         void this.reader?.setTheme(theme);
         this.callbacks.onSettingsChange?.(this.settings);
       });
+    });
+
+    // Visibility-aware screen wake lock
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && !this.elements.overlay.classList.contains("hidden")) {
+        void this.acquireWakeLock();
+      } else if (document.visibilityState === "hidden") {
+        void this.releaseWakeLock();
+      }
     });
 
     // Font Family selector

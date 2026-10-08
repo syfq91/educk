@@ -212,8 +212,54 @@
           </div>
         </section>
 
-        <!-- View: Settings (Placeholder) -->
+        <!-- View: Settings (Production Reader Preferences & About) -->
         <section id="view-settings" class="view-panel">
+          <div class="settings-card">
+            <h3>Reader Preferences</h3>
+            <p>Configure default typography and theme for reading.</p>
+            <div class="settings-row">
+              <label for="pref-theme">Default Theme:</label>
+              <select id="pref-theme" class="setting-select">
+                <option value="light">Light</option>
+                <option value="sepia">Sepia</option>
+                <option value="dark">Dark</option>
+                <option value="amoled">Black (AMOLED)</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <label for="pref-font-family">Default Font:</label>
+              <select id="pref-font-family" class="setting-select">
+                <option value="sans-serif">System Sans-Serif</option>
+                <option value="serif">Classic Serif</option>
+                <option value="monospace">Monospace</option>
+                <option value="opendyslexic">OpenDyslexic</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <label for="pref-font-size">Default Font Size:</label>
+              <div class="pref-font-size-wrap">
+                <input type="range" id="pref-font-size" min="12" max="36" step="1" value="18" class="setting-slider" />
+                <span id="pref-font-size-val">18px</span>
+              </div>
+            </div>
+            <div class="settings-row">
+              <label for="pref-line-spacing">Line Spacing:</label>
+              <select id="pref-line-spacing" class="setting-select">
+                <option value="1.2">Compact (1.2)</option>
+                <option value="1.5" selected>Standard (1.5)</option>
+                <option value="1.8">Relaxed (1.8)</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <label for="pref-margin">Margins:</label>
+              <select id="pref-margin" class="setting-select">
+                <option value="narrow">Narrow (12px)</option>
+                <option value="normal" selected>Normal (24px)</option>
+                <option value="wide">Wide (40px)</option>
+              </select>
+            </div>
+          </div>
+
           <div class="settings-card">
             <h3>About educk</h3>
             <p>Lightweight Android DRM-free ebook reader.</p>
@@ -270,6 +316,10 @@
           <div id="reader-title" class="reader-title">Loading book...</div>
           <div id="reader-chapter" class="reader-chapter">Chapter 1</div>
         </div>
+        <div id="reader-status-indicators" class="reader-status-indicators">
+          <span id="reader-clock" class="reader-clock">12:00</span>
+          <span id="reader-battery" class="reader-battery hidden">🔋 100%</span>
+        </div>
         <button id="reader-btn-settings" class="reader-nav-btn" aria-label="Reader Settings">Aa</button>
         <div id="reader-progress-badge" class="reader-progress-badge">0%</div>
       </header>
@@ -322,6 +372,7 @@
             <button class="theme-btn active" data-theme="light">Light</button>
             <button class="theme-btn" data-theme="sepia">Sepia</button>
             <button class="theme-btn" data-theme="dark">Dark</button>
+            <button class="theme-btn" data-theme="amoled">Black</button>
           </div>
 
           <div class="reader-font-controls">
@@ -357,11 +408,16 @@
         </div>
         <div class="settings-content">
           <div class="setting-group">
+            <label for="slider-font-size">Font Size (<span id="settings-font-size-label">18px</span>)</label>
+            <input type="range" id="slider-font-size" min="12" max="36" step="1" value="18" class="setting-slider" />
+          </div>
+          <div class="setting-group">
             <label for="select-font-family">Font Family</label>
             <select id="select-font-family" class="setting-select">
               <option value="sans-serif">System Sans-Serif</option>
               <option value="serif">Classic Serif</option>
               <option value="monospace">Monospace</option>
+              <option value="opendyslexic">OpenDyslexic</option>
             </select>
           </div>
           <div class="setting-group">

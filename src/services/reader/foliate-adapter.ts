@@ -380,12 +380,14 @@ export class FoliateReaderAdapter implements Reader {
       light: { bg: "#ffffff", text: "#1a1a1a", link: "#0066cc" },
       dark: { bg: "#121212", text: "#e0e0e0", link: "#66b3ff" },
       sepia: { bg: "#f4ecd8", text: "#3d2b1f", link: "#7a4b22" },
+      amoled: { bg: "#000000", text: "#d4d4d4", link: "#4da6ff" },
     };
 
     const fontFamilies: Record<ReaderFontFamily, string> = {
       "sans-serif": '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       serif: 'Georgia, "Times New Roman", Cambria, serif',
       monospace: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
+      opendyslexic: '"OpenDyslexic", "Comic Sans MS", cursive, sans-serif',
     };
 
     const margins: Record<ReaderMargin, number> = {
@@ -394,13 +396,15 @@ export class FoliateReaderAdapter implements Reader {
       wide: 40,
     };
 
-    const colors = themeColors[this.settings.theme];
-    const fontFamily = fontFamilies[this.settings.fontFamily];
-    const marginPx = margins[this.settings.margin];
+    const colors = themeColors[this.settings.theme] || themeColors.light;
+    const fontFamily = fontFamilies[this.settings.fontFamily] || fontFamilies["sans-serif"];
+    const marginPx = margins[this.settings.margin] ?? 24;
+    const isDark = this.settings.theme === "dark" || this.settings.theme === "amoled";
+    const dyslexicSpacing = this.settings.fontFamily === "opendyslexic" ? "letter-spacing: 0.03em; word-spacing: 0.05em;" : "";
 
     const css = `
       html {
-        color-scheme: ${this.settings.theme === "dark" ? "dark" : "light"};
+        color-scheme: ${isDark ? "dark" : "light"};
         background-color: ${colors.bg} !important;
         color: ${colors.text} !important;
       }
@@ -410,6 +414,7 @@ export class FoliateReaderAdapter implements Reader {
         font-family: ${fontFamily} !important;
         font-size: ${this.settings.fontSize}px !important;
         line-height: ${this.settings.lineSpacing} !important;
+        ${dyslexicSpacing}
         margin: 0 !important;
         padding: 0 ${marginPx}px !important;
       }

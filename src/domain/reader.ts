@@ -44,9 +44,9 @@ export interface ReadingPosition {
   modifiedAt?: string; // ISO 8601 UTC timestamp
 }
 
-export type ReaderTheme = "light" | "dark" | "sepia";
+export type ReaderTheme = "light" | "dark" | "sepia" | "amoled";
 
-export type ReaderFontFamily = "sans-serif" | "serif" | "monospace";
+export type ReaderFontFamily = "sans-serif" | "serif" | "monospace" | "opendyslexic";
 
 export type ReaderMargin = "narrow" | "normal" | "wide";
 
