@@ -1683,6 +1683,7 @@ html, body {
 }
 
 .entry-actions .btn-acquire,
+.entry-actions .btn-browse-collection,
 .entry-actions .btn-read-now,
 .entry-actions .btn-downloading,
 .entry-actions .btn-details {
@@ -1699,6 +1700,11 @@ html, body {
 }
 
 .entry-actions .btn-acquire {
+  background-color: var(--accent-color);
+  color: #ffffff;
+}
+
+.entry-actions .btn-browse-collection {
   background-color: var(--accent-color);
   color: #ffffff;
 }

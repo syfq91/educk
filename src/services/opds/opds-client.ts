@@ -24,6 +24,7 @@ import {
   AcquisitionLink,
 } from "../../domain/opds.ts";
 import { normalizeFeed } from "./compatibility.ts";
+import { httpRequest } from "../http/index.ts";
 
 const DEFAULT_CONFIG: OPDSClientConfig = {
   timeout: 15000,
@@ -70,9 +71,10 @@ export class OPDSClient {
           options.signal.addEventListener("abort", () => controller.abort());
         }
 
-        const response = await fetch(url, {
+        const response = await httpRequest(url, {
           method: "GET",
           headers,
+          timeoutMs: this.config.timeout,
           signal: controller.signal,
         });
 
@@ -117,8 +119,8 @@ export class OPDSClient {
     );
   }
 
-  private buildHeaders(auth?: OPDSCatalogAuth): HeadersInit {
-    const headers: HeadersInit = {
+  private buildHeaders(auth?: OPDSCatalogAuth): Record<string, string> {
+    const headers: Record<string, string> = {
       Accept: "application/atom+xml;profile=opds-catalog, application/atom+xml;q=0.9, */*;q=0.8",
       "User-Agent": this.config.userAgent,
     };
@@ -443,9 +445,23 @@ export class OPDSClient {
     };
   }
 
+  /**
+   * Finds a descendant element by its (possibly namespace-qualified) name.
+   *
+   * `querySelector` cannot parse qualified names such as `opds:price` or
+   * `opensearch:totalResults`: a real browser throws `SyntaxError`, which aborts the whole
+   * feed parse. The unit-test DOM (happy-dom) is lenient and returns `null` instead, which
+   * is why this only surfaced on device. `getElementsByTagName` matches the qualified name
+   * literally in XML documents and is safe for plain names too.
+   */
+  private findDescendant(element: Element, tagName: string): Element | null {
+    const matches = element.getElementsByTagName(tagName);
+    return matches.length > 0 ? matches[0] : null;
+  }
+
   private parseIntValue(element: Element, tagName: string): number | undefined {
-    // Try direct querySelector first
-    const el = element.querySelector(tagName);
+    // Namespace-safe lookup first: querySelector would throw on "opensearch:*".
+    const el = this.findDescendant(element, tagName);
     if (el) {
       const value = parseInt(el.textContent || "", 10);
       return isNaN(value) ? undefined : value;
@@ -479,8 +495,8 @@ export class OPDSClient {
   }
 
   private getTextContent(element: Element, tagName: string): string | null {
-    // Handle namespaced elements (e.g., dc:publisher, dcterms:publisher)
-    const el = element.querySelector(tagName);
+    // Handle namespaced elements (e.g., dc:publisher, dcterms:publisher, opds:price)
+    const el = this.findDescendant(element, tagName);
     if (el) return el.textContent?.trim() || null;
     
     // Try with namespace - check for dc: prefix (Dublin Core)
@@ -557,6 +573,30 @@ export class OPDSClient {
   getOpenAccessLink(entry: OPDSEntry): AcquisitionLink | null {
     const links = this.getAcquisitionLinks(entry);
     return links.find((l) => l.rel === "http://opds-spec.org/acquisition/open-access" as OPDSLinkRel) || null;
+  }
+
+  /**
+   * Returns the link that opens a navigation entry — a sub-catalog listed inside an OPDS
+   * navigation feed — or `null` when the entry is not navigable.
+   *
+   * Spec-compliant feeds use `rel="subsection"`. Deployed servers (e.g. manybooks.net) omit
+   * `rel` entirely, so Atom's default `alternate` applies; those entries are matched by their
+   * catalog media type instead. Entries that carry an acquisition link are books, not
+   * collections, and are never treated as navigable.
+   */
+  getNavigationLink(entry: OPDSEntry): OPDSLink | null {
+    if (this.getAcquisitionLinks(entry).length > 0) return null;
+
+    const isCatalogType = (type?: string): boolean =>
+      !!type && type.includes("application/atom+xml") && !type.includes("type=entry");
+
+    const subsection = entry.links.find((l) => l.rel === "subsection");
+    if (subsection) return subsection;
+
+    const catalogLink = entry.links.find(
+      (l) => isCatalogType(l.type) && !l.rel.startsWith("http://opds-spec.org/image"),
+    );
+    return catalogLink ?? null;
   }
 
   getCoverLink(entry: OPDSEntry): OPDSLink | null {

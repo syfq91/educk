@@ -1032,7 +1032,10 @@ name = "educk"
 version = "0.1.0"
 dependencies = [
  "futures-util",
+ "jni 0.22.4",
+ "ndk-context",
  "reqwest",
+ "rustls-platform-verifier",
  "serde",
  "serde_json",
  "tauri",

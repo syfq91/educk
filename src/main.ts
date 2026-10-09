@@ -696,6 +696,7 @@ function setupCatalogs(
   const searchSuggestions = document.querySelector<HTMLElement>("#feed-search-suggestions");
   const scrollSentinel = document.querySelector<HTMLElement>("#feed-scroll-sentinel");
   const emptyBackBtn = document.querySelector<HTMLButtonElement>("#btn-feed-empty-back");
+  const feedBackBtn = document.querySelector<HTMLButtonElement>("#btn-feed-back");
   const authModal = document.querySelector<HTMLElement>("#feed-auth-modal");
   const authForm = document.querySelector<HTMLFormElement>("#feed-auth-form");
   const authMessage = document.querySelector<HTMLElement>("#feed-auth-message");
@@ -727,6 +728,7 @@ function setupCatalogs(
     searchSuggestions,
     scrollSentinel,
     emptyBackBtn,
+    feedBackBtn,
     authModal,
     authForm,
     authMessage,

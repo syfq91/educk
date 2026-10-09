@@ -14,11 +14,32 @@ val tauriProperties = Properties().apply {
     }
 }
 
+// The Kotlin companion component of the `rustls-platform-verifier` crate must have exactly the
+// same version as the `rustls-platform-verifier-android` crate pinned in Cargo.lock: the native
+// side resolves the JVM class by name, so a mismatch crashes certificate verification at runtime.
+val rustlsPlatformVerifierVersion: String = providers
+    .fileContents(layout.projectDirectory.file("../../../Cargo.lock"))
+    .asText
+    .map { lockFile ->
+        val marker = "name = \"rustls-platform-verifier-android\""
+        val markerIndex = lockFile.indexOf(marker)
+        require(markerIndex >= 0) { "$marker not found in Cargo.lock" }
+        lockFile
+            .substring(markerIndex)
+            .substringAfter("version = \"")
+            .substringBefore("\"")
+            .also { check(it.isNotEmpty()) { "Could not read rustls-platform-verifier version" } }
+    }
+    .get()
+
 android {
     compileSdk = 37
     namespace = "my.syfq91.educk"
     defaultConfig {
-        manifestPlaceholders["usesCleartextTraffic"] = "false"
+        // Self-hosted OPDS catalogs (Calibre, BookFlow, Komga...) commonly run on plain
+        // HTTP inside the LAN. Android blocks cleartext traffic by default from API 28 on,
+        // which made every one of those catalogs fail with ERR_CLEARTEXT_NOT_PERMITTED.
+        manifestPlaceholders["usesCleartextTraffic"] = "true"
         applicationId = "my.syfq91.educk"
         minSdk = 24
         targetSdk = 37
@@ -75,6 +96,8 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.10.1")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.lifecycle:lifecycle-process:2.10.0")
+    // JVM half of the native certificate verifier used by reqwest's rustls backend.
+    implementation("org.rustls:rustls-platform-verifier:$rustlsPlatformVerifierVersion")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.4")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.0")

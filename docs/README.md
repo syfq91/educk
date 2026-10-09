@@ -7,6 +7,7 @@ Welcome to the **educk** technical and architectural documentation directory.
 ## Architecture & System Design
 - [product.md](product.md): Product vision, user flows, core MVP requirements, and out-of-scope features.
 - [architecture.md](architecture.md): 7-layer architecture, component responsibilities, and Tauri IPC interfaces.
+- [network.md](network.md): Native HTTP transport for feeds/progression, CORS & cleartext constraints, and the Android TLS bootstrap.
 - [security.md](security.md): Threat modeling for untrusted EPUBs & OPDS feeds, iframe sandbox parameters, and CSP.
 - [data-model.md](data-model.md): SQLite schema for sources, books, reading progress, sync states, and immutable migrations.
 - [reader.md](reader.md): Foliate-js reader integration, shadow DOM architecture, and spike findings.

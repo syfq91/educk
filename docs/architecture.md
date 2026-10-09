@@ -96,6 +96,12 @@ The architecture is designed around strict separation of concerns, defensive sec
 | UI & User Interaction | Frontend | TypeScript, CSS |
 | Ebook Rendering | Frontend | `foliate-js` via adapter |
 | Feed Parsing & Validation | Frontend | Browser DOMParser + TS Models |
+| Feed / Progression Transport | Backend | Rust (`reqwest`) via `http_request` command |
 | File Download & Streaming | Backend | Rust (`reqwest`, `tokio`) |
 | Metadata & State Persistence | Backend | SQLite via Rust / Tauri Plugin |
 | Storage & Sandboxing | Native | Android scoped internal app storage |
+
+Protocol I/O (OPDS feeds, catalog navigation, search and progression) crosses the IPC
+boundary through `src/services/http/http-transport.ts` and the Rust `http_request` command.
+The WebView's `fetch` cannot be used for it: OPDS servers send no CORS headers and Android
+blocks cleartext HTTP inside the WebView. See [network.md](network.md).

@@ -11,6 +11,7 @@
  */
 
 import type { OPDSCatalogAuth } from "../../domain/opds.ts";
+import { httpRequest } from "../http/index.ts";
 import type {
   IProgressionClient,
   ProgressionClientConfig,
@@ -152,9 +153,10 @@ export class ProgressionClient implements IProgressionClient {
         const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
         try {
-          const response = await fetch(url, {
+          const response = await httpRequest(url, {
             method: "GET",
             headers,
+            timeoutMs: this.config.timeout,
             signal: controller.signal,
           });
 
@@ -256,10 +258,11 @@ export class ProgressionClient implements IProgressionClient {
         const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
         try {
-          const response = await fetch(url, {
+          const response = await httpRequest(url, {
             method: "PUT",
             headers,
             body: JSON.stringify(outgoingPayload),
+            timeoutMs: this.config.timeout,
             signal: controller.signal,
           });
 

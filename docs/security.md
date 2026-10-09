@@ -59,11 +59,19 @@ In `educk`, the following are treated as inherently untrusted inputs:
 ### 5. URL Scheme Poisoning & Network Boundary Defense
 - **Protocol Whitelisting**:
   - `start_download` in Rust validates that download URLs start with `http://` or `https://`, rejecting `file:`, `javascript:`, `content:`, or custom schemes.
+  - The native `http_request` command applies the same allowlist (`validate_url`) before any socket is opened, so feed, search and progression URLs can never escape to another scheme.
   - `OPDSClient.resolveUrl` strictly enforces `http:` and `https:` schemes, dropping any malicious URLs from feeds, acquisition links, next/search links, and covers.
 
 ### 6. Credential & Privacy Protection
 - OPDS authentication headers (`Basic` and `Bearer`) are kept in isolated application state.
 - No credential or authorization token is ever passed into book rendering contexts or logged to console/log files.
+- Authorization headers are sent only by the native HTTP command to the catalog origin that requested them; they never enter the WebView request pipeline.
+
+### 7. Transport Security & Cleartext Trade-off
+- **Native transport**: feed and progression traffic runs in Rust, outside the WebView document, so it is neither exposed to content scripts nor subject to browser same-origin checks.
+- **TLS**: HTTPS validation runs through `rustls-platform-verifier`, which delegates to the Android platform verifier. The JVM bootstrap happens at startup (`src-tauri/src/tls.rs`) and the JNI-only Kotlin classes are protected from R8 with an explicit `-keep` rule. Its trust anchors are the app's `network_security_config.xml`: **system CAs only** — user-installed CAs are deliberately not trusted (Android's default for apps targeting API 24+), so a catalog cannot be intercepted by a CA the device owner happened to install.
+- **Cleartext HTTP**: enabled in the manifest because self-hosted LAN catalogs (Calibre-Web, BookFlow, Komga) commonly run on plain HTTP, and because covers are loaded as `<img>` elements by the WebView. Feeds themselves do not depend on it — they use the native path. This is a deliberate, documented trade-off for a DRM-free LAN reader; it is recorded in [network.md](network.md) and the manifest comment in `app/build.gradle.kts`.
+- **CSP**: `connect-src` still restricts the WebView to `http:`/`https:`; `img-src` permits `http:` only for catalog covers.
 
 ---
 

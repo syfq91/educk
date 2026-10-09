@@ -4,6 +4,7 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 pub mod commands;
 pub mod downloads;
 pub mod filesystem;
+pub mod tls;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -29,6 +30,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .manage(download_manager)
+        .manage(commands::http::HttpClient::new())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(
@@ -36,6 +38,14 @@ pub fn run() {
                 .add_migrations("sqlite:educk.db", migrations)
                 .build(),
         )
+        .setup(|_app| {
+            // Must happen before the first HTTPS request: on Android the rustls platform
+            // verifier aborts the process if it has not been bootstrapped with the JVM.
+            if let Err(err) = tls::init_platform_certificate_verifier() {
+                eprintln!("[educk] platform certificate verifier initialization failed: {err}");
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             greet,
             get_app_version,
@@ -44,7 +54,8 @@ pub fn run() {
             commands::get_download_status,
             commands::delete_book_file,
             commands::read_book_file,
-            commands::cleanup_orphan_downloads
+            commands::cleanup_orphan_downloads,
+            commands::http_request
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

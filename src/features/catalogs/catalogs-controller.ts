@@ -56,6 +56,7 @@ export interface CatalogsUiElements {
   searchSuggestions?: HTMLElement | null;
   scrollSentinel?: HTMLElement | null;
   emptyBackBtn?: HTMLButtonElement | null;
+  feedBackBtn?: HTMLButtonElement | null;
   authModal?: HTMLElement | null;
   authForm?: HTMLFormElement | null;
   authMessage?: HTMLElement | null;
@@ -243,6 +244,11 @@ export class CatalogsController {
 
     // Empty state back button
     this.elements.emptyBackBtn?.addEventListener("click", () => {
+      this.showView("catalogs");
+    });
+
+    // Back to the catalog list from a populated feed (only reachable state otherwise)
+    this.elements.feedBackBtn?.addEventListener("click", () => {
       this.showView("catalogs");
     });
 
@@ -625,6 +631,12 @@ export class CatalogsController {
           ${openAccessLink ? "Download" : "Acquire"}
         </button>
       `;
+    } else if (this.opdsClient.getNavigationLink(entry)) {
+      actionBtnHtml = `
+        <button class="btn-browse-collection" data-entry-id="${entry.id}" data-book-id="${bookId}">
+          Browse
+        </button>
+      `;
     } else {
       actionBtnHtml = `<button class="btn-acquire disabled" disabled>Unavailable</button>`;
     }
@@ -792,7 +804,18 @@ export class CatalogsController {
       });
     });
 
-    // Clicking anywhere on a card (outside buttons) opens the book if downloaded
+    // Navigation entries (OPDS navigation feeds): open the sub-catalog they point at
+    this.elements.feedList
+      .querySelectorAll<HTMLButtonElement>(".btn-browse-collection")
+      .forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (btn.dataset.entryId) void this.openNavigationEntry(btn.dataset.entryId);
+        });
+      });
+
+    // Clicking anywhere on a card (outside buttons) opens the book if downloaded,
+    // or descends into the sub-catalog for navigation entries
     this.elements.feedList.querySelectorAll<HTMLElement>(".entry-card").forEach((card) => {
       card.addEventListener("click", (e) => {
         if ((e.target as HTMLElement).closest("button")) return;
@@ -802,6 +825,8 @@ export class CatalogsController {
           const entry = this.allFeedEntries.find((item) => item.id === entryId);
           if (entry && this.isBookDownloaded(entry)) {
             this.callbacks.onReadNow?.(bookId);
+          } else if (entry && this.opdsClient.getNavigationLink(entry)) {
+            void this.openNavigationEntry(entryId);
           }
         }
       });
@@ -1095,6 +1120,34 @@ export class CatalogsController {
 
     this.navigationState.breadcrumbs = this.navigationState.breadcrumbs.slice(0, level + 1);
     this.loadFeed(target.feedUrl);
+  }
+
+  /**
+   * Descends into the sub-catalog referenced by a navigation entry and pushes a breadcrumb,
+   * so the existing back/breadcrumb controls can climb out again.
+   */
+  private async openNavigationEntry(entryId: string): Promise<void> {
+    const state = this.navigationState;
+    if (!state) return;
+
+    const entry = this.allFeedEntries.find((item) => item.id === entryId);
+    if (!entry) return;
+
+    const link = this.opdsClient.getNavigationLink(entry);
+    if (!link) return;
+
+    let href = link.href;
+    try {
+      href = new URL(link.href, state.feedUrl).href;
+    } catch {
+      // Relative hrefs are already resolved by the OPDS client; fall back to the raw value.
+    }
+
+    // Guard against self-referencing entries that would loop forever
+    if (href === state.feedUrl) return;
+
+    state.breadcrumbs.push({ title: entry.title, feedUrl: href });
+    await this.loadFeed(href);
   }
 
   private renderPagination(feed: OPDSFeed): void {

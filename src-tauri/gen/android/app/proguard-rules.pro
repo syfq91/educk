@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# rustls-platform-verifier is only reachable through JNI, so R8 treats it as dead code.
+# Removing these classes makes every HTTPS request abort the app.
+# See the "Proguard" section of the rustls-platform-verifier README.
+-keep, includedescriptorclasses class org.rustls.platformverifier.** { *; }

@@ -53,6 +53,12 @@ milestones:
   - id: M17
     name: End-to-End Testing & Release Gate
     status: complete
+  - id: M18
+    name: On-Device Network Correctness (CORS, Cleartext, Android TLS)
+    status: complete
+  - id: M19
+    name: On-Device Browse Correctness (Feed Parsing & Navigation)
+    status: complete
 
 tasks:
   - id: GOV-001
@@ -423,4 +429,31 @@ tasks:
     milestone: M17
     description: Offline / Network Flapping & Conflict Resilience in E2E Environment (transient HTTP 500 retry backoff and remote progression conflict resolution)
     status: done
-
+  - id: NET-001
+    milestone: M18
+    description: Native HTTP transport for OPDS feeds & progression (`http_request` command) to bypass WebView CORS and cleartext policy, with scheme/method allowlists, clamped timeouts and a 10 MB body limit
+    status: done
+  - id: NET-002
+    milestone: M18
+    description: Android TLS bootstrap (rustls-platform-verifier JVM init in Tauri setup, Maven component pinned to Cargo.lock, R8 keep rule) so HTTPS downloads no longer abort the process
+    status: done
+  - id: NET-003
+    milestone: M18
+    description: Cleartext HTTP enabled for LAN catalogs and covers, plus `img-src http:` in the CSP
+    status: done
+  - id: NET-004
+    milestone: M18
+    description: Transport unit tests (native bridge mapping, abort semantics, 401 passthrough) and Rust command tests (scheme/method rejection, body limit, status passthrough)
+    status: done
+  - id: NET-005
+    milestone: M18
+    description: On-device verification on release APK (HTTPS feed browse, HTTPS download, cleartext HTTP, no native aborts)
+    status: done
+  - id: OPDS-007
+    milestone: M19
+    description: Replace `querySelector` with a namespace-safe qualified-name lookup in OPDS parsing so `opds:price`, `dcterms:*` and `opensearch:*` elements parse in Chromium instead of throwing a selector SyntaxError, covered by Chromium-conformance tests
+    status: done
+  - id: OPDS-008
+    milestone: M19
+    description: Navigation-entry drill-down (Browse action, card tap, breadcrumb push/back) so OPDS navigation feeds such as Calibre-Web, Komga, BookFlow and ManyBooks roots can be traversed, plus a `← Catalogs` back action so a populated feed is never a dead end
+    status: done

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network security configuration for educk.
+
+  This file intentionally overrides the same resource shipped inside the
+  `org.rustls:rustls-platform-verifier` AAR, whose manifest declares
+  `android:networkSecurityConfig="@xml/network_security_config"` with
+  `<base-config cleartextTrafficPermitted="false" />`. Manifest merging pulls that attribute
+  into this application, and a network security config takes precedence over
+  `android:usesCleartextTraffic`, so without this override every plain-HTTP request made by
+  the WebView (self-hosted LAN catalogs such as Calibre-Web / BookFlow / Komga, and their
+  covers) fails with ERR_CLEARTEXT_NOT_PERMITTED.
+
+  Notes:
+  - The native feed/progression transport (docs/network.md) is not subject to the cleartext
+    policy — plain-HTTP feeds through it worked even before this override. WebView-side
+    resources such as catalog covers were blocked, and that is what this file fixes.
+  - Its trust anchors do apply to native TLS as well: the platform verifier resolves them from
+    this configuration, so HTTPS is validated against the system CA store only. User-installed
+    CAs are deliberately not trusted (Android's default for apps targeting API 24+).
+  - Allowing cleartext broadly also keeps CRL retrieval working for the platform certificate
+    verifier, which the upstream configuration enables for a fixed domain list.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

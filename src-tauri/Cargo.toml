@@ -31,6 +31,14 @@ zip = { version = "2.2", default-features = false, features = ["deflate"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 thiserror = "2"
 
+# Android-only: `reqwest`'s `rustls` backend uses `rustls-platform-verifier`, which on Android
+# must be bootstrapped with a JVM handle and the companion Kotlin component (see build.gradle.kts)
+# before the first HTTPS request, otherwise certificate verification aborts the process.
+[target.'cfg(target_os = "android")'.dependencies]
+rustls-platform-verifier = "0.7"
+jni = "0.22"
+ndk-context = "0.1"
+
 [dev-dependencies]
 tempfile = "3"
 

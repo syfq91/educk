@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: data: blob: https:; font-src 'self' asset: data:; connect-src 'self' ipc: http: https:; frame-src 'self' blob: data:;"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: data: blob: http: https:; font-src 'self' asset: data:; connect-src 'self' ipc: http: https:; frame-src 'self' blob: data:;"
     />
     <title>educk</title>
     <link rel="stylesheet" href="/src/styles.css" />
@@ -97,6 +97,7 @@
           <div id="feed-view" class="feed-view hidden">
             <header class="feed-header">
               <div class="feed-top-bar">
+                <button id="btn-feed-back" class="btn btn-secondary btn-sm" aria-label="Back to catalogs">← Catalogs</button>
                 <div id="feed-breadcrumb" class="feed-breadcrumb"></div>
                 <div class="feed-view-toggles">
                   <button id="btn-view-grid" class="btn-toggle active" aria-label="Grid view" title="Grid view">⊞ Grid</button>

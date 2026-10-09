@@ -11,6 +11,8 @@ Quality in `educk` is validated across multiple layers. A feature or milestone i
 - **Scope**:
   - Domain models and validation logic.
   - OPDS Atom feed parser with fixture files (`fixtures/opds/`).
+  - Namespace-qualified OPDS elements with Chromium selector conformance (`tests/unit/opds-namespaces.test.ts`).
+  - Native HTTP transport: `http_request` mapping, abort semantics, 401 passthrough (`tests/unit/http-transport.test.ts`).
   - Progression conflict resolution algorithm.
   - State stores and repository mocks.
 - **Execution**: `pnpm test`
@@ -19,6 +21,7 @@ Quality in `educk` is validated across multiple layers. A feature or milestone i
 - **Scope**:
   - Download streaming, resume logic, and atomic file replacement.
   - Path traversal defense & UUID validation.
+  - OPDS/progression HTTP command: scheme & method allowlist, clamped timeouts, 10 MB body limit, HTTP status passthrough (`src-tauri/src/commands/http.rs`).
   - SQLite database migrations and schema integrity.
 - **Execution**: `cargo test --manifest-path src-tauri/Cargo.toml`
 
@@ -53,6 +56,11 @@ Quality in `educk` is validated across multiple layers. A feature or milestone i
 | **OPDS** | Entity expansion / XXE attempt | Entity ignored or parsing aborted cleanly |
 | **OPDS** | Relative links without base | Resolved against feed root safely |
 | **OPDS** | 401 Unauthorized | Prompts for credentials; no raw error dump |
+| **OPDS** | Namespace-qualified elements (`opds:price`, `dcterms:*`, `opensearch:*`) | Parsed with a qualified-name lookup; no `querySelector` `SyntaxError` in the WebView |
+| **OPDS** | Navigation feed entry (sub-catalog) | Opens the sub-feed via `Browse`/card tap and pushes a breadcrumb; never a dead "Unavailable" action |
+| **UI** | Populated feed with no way back | `← Catalogs` in the feed top bar returns to the catalog list (previously only the empty state offered a way out) |
+| **Network** | Feed fetched from the WebView (no CORS headers, plain-HTTP catalog) | Routed through the native `http_request` command; no `TypeError: Failed to fetch` / `ERR_CLEARTEXT_NOT_PERMITTED` |
+| **Network** | Android TLS bootstrap skipped | Verifier initialized in Tauri `setup`; an HTTPS request never aborts the process |
 | **Download** | Aborted mid-download | `.part` file cleaned up; library unaffected |
 | **Download** | Corrupted EPUB headers | Validation fails; file deleted; error logged |
 | **Download** | Disk full / quota error | User notified; atomic roll-back |

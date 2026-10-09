@@ -1,6 +1,6 @@
 # Current Status
 
-**Current Milestone**: M15 — OPDS Ecosystem & Server Compatibility (Complete)
+**Current Milestone**: M19 — On-Device Browse Correctness (Complete)
 
 ---
 
@@ -177,11 +177,26 @@
   - Added `bookflow` server profile heuristic detection in `compatibility.ts`.
   - Created dedicated compatibility test suite `tests/unit/bookflow-compatibility.test.ts` (8 tests).
   - Total 257 automated tests passing across 38 test files.
+- **Release Packaging (arm64 APK)**:
+  - Built the production arm64 APK: `pnpm tauri android build --target aarch64 --split-per-abi --apk` producing the `arm64Release` variant (`app-arm64-release-unsigned.apk`), signed with the Android debug keystore into `app-arm64-release.apk` (v2 + v3 signature schemes).
+  - Verified artifact: `my.syfq91.educk` `versionName 0.1.0` / `versionCode 1000`, `native-code: arm64-v8a` only, `libeduck_lib.so` is ELF64/AArch64 (release, LTO), `minSdk 24`, `targetSdk 37`.
+- **Milestone M18 (On-Device Network Correctness: CORS, Cleartext, Android TLS)**:
+  - Root-caused why catalog browsing and downloads failed on a release APK: WebView `fetch()` is subject to CORS (feeds served without CORS headers failed with `TypeError: Failed to fetch`), Android's network security config rejected plain-HTTP LAN catalogs with `ERR_CLEARTEXT_NOT_PERMITTED`, and every HTTPS request killed the process with `SIGABRT` because `rustls-platform-verifier` was never bootstrapped on Android.
+  - Added a native `http_request` Tauri command (`src-tauri/src/commands/http.rs`) with scheme/method allowlists, clamped timeouts (1 s–60 s, default 15 s), a 10 MB body limit, header validation and HTTP status passthrough (401 is data, not an error); redirects to non-HTTP schemes are never followed.
+  - Introduced an application-owned transport layer (`src/services/http/http-transport.ts`) that prefers the native bridge inside the WebView and falls back to `fetch()` everywhere else; `OPDSClient` and `ProgressionClient` now route all requests through it.
+  - Bootstrapped `rustls-platform-verifier` for Android in the Tauri `setup` hook (`src-tauri/src/tls.rs`, JNI + `ndk-context`), pinned the Maven companion component to the version recorded in `Cargo.lock`, and added an R8 keep rule for the JNI-reachable Kotlin classes.
+  - Enabled cleartext HTTP for LAN catalogs (manifest placeholder plus an app-owned `network_security_config.xml` that overrides the verifier AAR's stricter config while keeping system CAs only) and added `http:` to `img-src`/`connect-src` in the CSP.
+  - Documented in `docs/network.md`; `docs/architecture.md`, `docs/security.md`, `docs/testing.md` and `docs/tasks.yaml` updated.
+- **Milestone M19 (On-Device Browse Correctness: Feed Parsing & Navigation)**:
+  - Exposed latent bugs that only became reachable once fetching worked: (a) `OPDSClient` passed namespace-qualified names (`opds:price`, `dcterms:*`, `opensearch:*`) to `querySelector`, which throws `SyntaxError` in Chromium/WebView and aborted every feed parse — happy-dom returns `null` instead, so CI never saw it; (b) navigation entries had no way to be opened, so navigation-feed catalogs (Calibre-Web, Komga, BookFlow, ManyBooks) could not be traversed past the root feed.
+  - (a) Fixed with a `getElementsByTagName`-based qualified-name lookup (`findDescendant`), locked in by Chromium-conformance tests that emulate the browser's throwing selector behaviour plus namespaced-element parsing assertions — all three tests fail without the fix.
+  - (b) Implemented navigation drill-down: a `Browse` action on collection entries, card-tap navigation, and breadcrumb push/back through `OPDSClient.getNavigationLink`, which accepts both spec-compliant `rel="subsection"` links and deployed feeds that omit `rel` (Atom's default `alternate`).
+  - (c) Added the missing return path out of a populated feed (`← Catalogs` in the feed top bar): previously the only way back to the catalog list was the empty-state button, so opening any feed was a one-way trip.
 
 ---
 
 ## In Progress
-None. All 17 milestones (M0–M17) and ecosystem compatibility checks are 100% complete!
+None. All 19 milestones (M0–M19) and ecosystem compatibility checks are 100% complete!
 
 ---
 
@@ -191,7 +206,8 @@ None.
 ---
 
 ## Known Issues
-- Android SDK/Java not configured in headless CLI environment for direct `gradlew assembleDebug` invocation; Android-compatible Rust code verified via `cargo check`, `cargo clippy`, and `cargo check --tests`.
+- None blocking. Android release packaging is now verified end-to-end (see Verification Summary); Gradle runs on the Android Studio JBR (`~/.local/android-studio/jbr`, OpenJDK 25) with `ANDROID_HOME=~/Android/Sdk`, so no system-wide JDK install is required.
+- **Several public catalogs are unreachable from this network — server-side, not app defects**: Project Gutenberg and Feedbooks answer `403`, Standard Ebooks answers `401` (`www-authenticate: Basic realm="Enter your Patrons Circle email address and leave the password empty."`), the Komga demo server answers `401`. The app surfaces these correctly as auth/error states. `manybooks.net` works and sits behind Cloudflare (a bare `curl` gets a challenge; the app's requests succeed, observed TTFB 1.6–2.4 s).
 
 ---
 
@@ -202,11 +218,22 @@ v1.0.0 Production Release & Packaging.
 
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
-- **ESLint (`pnpm run lint`)**: PASS (0 errors, 13 warnings)
-- **Unit & Integration Tests (`pnpm test`)**: PASS (257 tests passed across 38 test files)
+- **ESLint (`pnpm run lint`)**: PASS (0 errors, 14 warnings — all pre-existing `no-explicit-any` in test files)
+- **Unit & Integration Tests (`pnpm test`)**: PASS (279 tests passed across 41 test files)
 - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
 - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
-- **Rust Cargo Tests Check (`cargo check --tests`)**: PASS (0 errors)
-- **Rust Clippy (`cargo clippy -- -D warnings`)**: PASS (0 warnings)
+- **Rust Cargo Tests (`cargo test`)**: PASS (23 tests, 0 failures)
+- **Rust Clippy (`cargo clippy --all-targets -- -D warnings`)**: PASS (0 warnings)
+- **Android-target Rust (`cargo check` + `cargo clippy --target aarch64-linux-android -- -D warnings`)**: PASS (0 warnings)
+- **Android arm64 Release APK (`pnpm tauri android build --target aarch64 --split-per-abi --apk`)**: PASS (`arm64Release` variant built, signed with `~/.android/debug.keystore`, `apksigner verify` → v2/v3 schemes OK, `native-code: arm64-v8a`)
+- **On-device acceptance (release APK on hardware)**: PASS
+  - HTTPS OPDS browse → feed renders (root feed 308 ms warm, native `http_request` 0.5–1.9 s per feed).
+  - Plain-HTTP (cleartext) Calibre-Web fixture browse → entries render; cleartext cover `<img>` loads.
+  - Navigation-feed drill-down: `Browse` on a collection entry → sub-feed, breadcrumb pushed; root breadcrumb climbs back.
+  - Title-detail feed (`application/atom+xml` entry link) → `Acquire` → download completes → `Read Now`.
+  - `← Catalogs` returns from a populated feed to the catalog list.
+  - Cold restart → add catalog, browse, drill-down, back, delete catalog all work; original 4 catalogs and library intact after cleanup.
+  - WebView `fetch` log during a full browse shows only the Tauri IPC channel — all feed traffic takes the native path (CORS bypass confirmed).
+  - logcat: no `SIGABRT`, no fatal signals, no `FATAL EXCEPTION` across the whole session.
 
 

@@ -344,4 +344,107 @@ describe("Milestone M7: OPDSClient", () => {
     expect(feed.itemsPerPage).toBe(20);
     expect(feed.startIndex).toBe(1);
   });
+
+  it("should detect navigation entries in feeds that omit rel attributes", async () => {
+    const feedXml = `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>urn:manybooks:root</id>
+  <title>ManyBooks.net</title>
+  <updated>2026-01-01T00:00:00Z</updated>
+  <entry>
+    <title>New Titles</title>
+    <id>urn:manybooks:new-titles</id>
+    <updated>2026-01-01T00:00:00Z</updated>
+    <content type="text">Recently Added books</content>
+    <link type="application/atom+xml" href="https://manybooks.net/opds/new_titles"/>
+  </entry>
+  <entry>
+    <title>A Real Book</title>
+    <id>urn:manybooks:book-1</id>
+    <updated>2026-01-01T00:00:00Z</updated>
+    <link rel="http://opds-spec.org/acquisition/open-access" type="application/epub+zip" href="https://manybooks.net/download/1.epub"/>
+  </entry>
+</feed>`;
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      headers: new Headers({ "content-type": "application/xml" }),
+      text: () => Promise.resolve(feedXml),
+    });
+
+    const feed = await client.fetchFeed("https://manybooks.net/opds");
+    expect(feed.entries).toHaveLength(2);
+
+    const [collection, book] = feed.entries;
+    // rel is omitted in the feed, so Atom's default "alternate" applies
+    expect(client.getNavigationLink(collection)?.href).toBe(
+      "https://manybooks.net/opds/new_titles",
+    );
+    expect(client.getNavigationLink(book)).toBeNull();
+  });
+
+  it("should resolve navigation entries to their sub-catalog link", () => {
+    const subsectionEntry = createMockEntry({
+      links: [
+        {
+          rel: "subsection",
+          href: "https://example.com/opds/authors",
+          type: "application/atom+xml;profile=opds-catalog",
+        },
+      ],
+    });
+    expect(client.getNavigationLink(subsectionEntry)?.href).toBe(
+      "https://example.com/opds/authors",
+    );
+
+    const implicitRelEntry = createMockEntry({
+      links: [
+        { rel: "alternate", href: "https://example.com/opds/genres", type: "application/atom+xml" },
+      ],
+    });
+    expect(client.getNavigationLink(implicitRelEntry)?.href).toBe(
+      "https://example.com/opds/genres",
+    );
+  });
+
+  it("should not treat books or non-catalog links as navigable", () => {
+    // The default entry carries an acquisition link plus a cover
+    expect(client.getNavigationLink(createMockEntry())).toBeNull();
+
+    const htmlOnly = createMockEntry({
+      links: [{ rel: "alternate", href: "https://example.com/page", type: "text/html" }],
+    });
+    expect(client.getNavigationLink(htmlOnly)).toBeNull();
+
+    // Atom entry documents are not catalogs, even though they share the media type
+    const atomEntryLink = createMockEntry({
+      links: [
+        {
+          rel: "alternate",
+          href: "https://example.com/opds/entry/1",
+          type: "application/atom+xml;type=entry",
+        },
+      ],
+    });
+    expect(client.getNavigationLink(atomEntryLink)).toBeNull();
+
+    expect(client.getNavigationLink(createMockEntry({ links: [] }))).toBeNull();
+
+    // An acquisition link always wins: that entry is a book, even if it also lists a subsection
+    const bookWithSubsection = createMockEntry({
+      links: [
+        {
+          rel: "subsection",
+          href: "https://example.com/sub",
+          type: "application/atom+xml;profile=opds-catalog",
+        },
+        {
+          rel: "http://opds-spec.org/acquisition/open-access",
+          href: "https://example.com/book.epub",
+          type: "application/epub+zip",
+        },
+      ],
+    });
+    expect(client.getNavigationLink(bookWithSubsection)).toBeNull();
+  });
 });

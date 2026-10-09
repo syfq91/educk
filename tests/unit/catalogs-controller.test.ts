@@ -176,6 +176,10 @@ describe("Milestone M8: CatalogsController", () => {
     const emptyBackBtn = document.createElement("button");
     emptyBackBtn.id = "btn-feed-empty-back";
     feedEmpty.appendChild(emptyBackBtn);
+
+    const feedBackBtn = document.createElement("button");
+    feedBackBtn.id = "btn-feed-back";
+    feedView.appendChild(feedBackBtn);
     feedView.appendChild(feedEmpty);
 
     const paginationPrev = document.createElement("button");
@@ -259,6 +263,7 @@ describe("Milestone M8: CatalogsController", () => {
       searchSuggestions,
       scrollSentinel,
       emptyBackBtn,
+      feedBackBtn,
       authModal,
       authForm,
       authMessage,
@@ -571,5 +576,77 @@ describe("Milestone M8: CatalogsController", () => {
       }),
     );
     expect(onDownloadStarted).toHaveBeenCalled();
+  });
+
+  it("should descend into navigation entries and climb back with breadcrumbs", async () => {
+    const rootFeed = createMockFeed({
+      entries: [
+        {
+          id: "nav-authors",
+          title: "Authors",
+          updated: "2024-01-01T00:00:00Z",
+          authors: [],
+          categories: [],
+          links: [
+            {
+              rel: "subsection",
+              href: "https://example.com/opds/authors",
+              type: "application/atom+xml;profile=opds-catalog",
+            },
+          ],
+        },
+      ],
+      facets: [],
+      links: [],
+    });
+    const authorsFeed = createMockFeed({ title: "Authors", entries: [], facets: [], links: [] });
+
+    controller = new CatalogsController(elements, mockDownloadService, mockBookRepo, mockSourceRepo);
+    await controller.loadCatalogs();
+    const fetchFeedMock = vi.fn(
+      async (url: string) => (url.endsWith("/authors") ? authorsFeed : rootFeed),
+    );
+    (controller as any).opdsClient.fetchFeed = fetchFeedMock;
+
+    await controller.openCatalog("standardebooks");
+
+    // A navigation entry offers "Browse" instead of a dead "Unavailable" button
+    const browseBtn = elements.feedList.querySelector<HTMLButtonElement>(".btn-browse-collection");
+    expect(browseBtn).not.toBeNull();
+    expect(elements.feedList.querySelector(".btn-acquire.disabled")).toBeNull();
+
+    browseBtn?.click();
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(fetchFeedMock).toHaveBeenCalledWith(
+      "https://example.com/opds/authors",
+      expect.anything(),
+    );
+    expect(elements.feedTitle.textContent).toBe("Authors");
+    expect(elements.feedBreadcrumb.querySelectorAll(".breadcrumb-item")).toHaveLength(2);
+
+    // The root breadcrumb climbs back out of the sub-catalog
+    const rootCrumb = elements.feedBreadcrumb.querySelector<HTMLButtonElement>(
+      '.breadcrumb-item[data-level="0"]',
+    );
+    rootCrumb?.click();
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(elements.feedTitle.textContent).toBe("Test OPDS Feed");
+    expect(elements.feedBreadcrumb.querySelectorAll(".breadcrumb-item")).toHaveLength(1);
+
+    // Clicking the card body descends as well, not just the Browse button
+    const card = elements.feedList.querySelector<HTMLElement>(".entry-card");
+    expect(card).not.toBeNull();
+    card?.click();
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(elements.feedTitle.textContent).toBe("Authors");
+    expect(elements.feedBreadcrumb.querySelectorAll(".breadcrumb-item")).toHaveLength(2);
+
+    // A populated feed is not a dead end: it can return to the catalog list
+    elements.feedBackBtn?.click();
+    expect(elements.feedView.classList.contains("hidden")).toBe(true);
+    expect(elements.catalogList.classList.contains("hidden")).toBe(false);
   });
 });
