@@ -22,44 +22,6 @@
       <main class="content-container">
         <!-- View: Library (Active by default) -->
         <section id="view-library" class="view-panel active">
-          <div class="spike-card">
-            <div class="spike-header">
-              <span class="spike-badge">Milestone M3 Reader Core</span>
-              <h3 class="spike-title">Production Reader & Dual Format</h3>
-            </div>
-            <p class="spike-description">
-              Verify EPUB 3 (Nav Doc) and EPUB 2 (NCX), TOC drawer navigation, immersive tap zones, and typography controls.
-            </p>
-            <div class="spike-actions">
-              <button id="btn-open-epub3" class="btn btn-primary">📖 Open EPUB 3 Sample</button>
-              <button id="btn-open-epub2" class="btn btn-secondary">📜 Open EPUB 2 Sample</button>
-            </div>
-          </div>
-
-          <!-- Milestone M5 Native Download Card -->
-          <div class="download-card" id="download-card">
-            <div class="spike-header">
-              <span class="spike-badge">Milestone M5 Download Engine</span>
-              <h3 class="spike-title">Native HTTP Download & Validation</h3>
-            </div>
-            <p class="spike-description">
-              Stream EPUBs directly to sandboxed app storage, validate ZIP & mimetype integrity, and register in SQLite.
-            </p>
-            <div class="spike-actions">
-              <button id="btn-download-sample" class="btn btn-primary">⬇️ Download Sample Book</button>
-              <button id="btn-cancel-download" class="btn btn-danger" disabled>✖ Cancel</button>
-            </div>
-            <div id="download-progress-container" class="download-progress-container hidden">
-              <div class="download-progress-track">
-                <div id="download-progress-fill" class="download-progress-fill"></div>
-              </div>
-              <div class="download-meta-row">
-                <span id="download-status-label">Ready</span>
-                <span id="download-bytes-label">0 KB</span>
-              </div>
-            </div>
-          </div>
-
           <!-- Milestone M6 Offline Local Library -->
           <div class="library-header">
             <h2 class="library-title">Library</h2>
@@ -76,7 +38,7 @@
           <div id="library-empty" class="empty-state hidden">
             <div class="empty-icon">📚</div>
             <h2>Your Library is Empty</h2>
-            <p>Download books from OPDS catalogs or use the download button above to add your first book.</p>
+            <p>Download books from OPDS catalogs to add your first book.</p>
           </div>
         </section>
 

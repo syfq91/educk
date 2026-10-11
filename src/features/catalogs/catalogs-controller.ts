@@ -72,27 +72,6 @@ export interface CatalogsControllerCallbacks {
   onCatalogsChanged?: (catalogs: OPDSCatalog[]) => void;
 }
 
-const DEFAULT_CATALOGS: Array<{ id: string; name: string; url: string; description: string }> = [
-  {
-    id: "standardebooks",
-    name: "Standard Ebooks",
-    url: "https://standardebooks.org/opds",
-    description: "Free public domain ebooks, beautifully formatted",
-  },
-  {
-    id: "gutenberg",
-    name: "Project Gutenberg",
-    url: "https://www.gutenberg.org/opds/catalog.rdf",
-    description: "Over 60,000 free ebooks",
-  },
-  {
-    id: "feedbooks",
-    name: "Feedbooks",
-    url: "https://www.feedbooks.com/opds",
-    description: "Public domain and original books",
-  },
-];
-
 const SEARCH_SUGGESTION_TOPICS = [
   "Fiction",
   "Philosophy",
@@ -301,36 +280,12 @@ export class CatalogsController {
   public async loadCatalogs(): Promise<void> {
     try {
       const stored = await this.sourceRepo.findAll();
-      if (!stored || stored.length === 0) {
-        // Seed initial default catalogs into SQLite
-        for (const def of DEFAULT_CATALOGS) {
-          await this.sourceRepo.insert({
-            id: def.id,
-            name: def.name,
-            url: def.url,
-            description: def.description,
-            username: null,
-            authType: "none",
-            authData: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
-        }
-        const seeded = await this.sourceRepo.findAll();
-        this.catalogs = seeded.map(this.mapSourceToCatalog);
-      } else {
-        this.catalogs = stored.map(this.mapSourceToCatalog);
-      }
+      this.catalogs = (stored || []).map(this.mapSourceToCatalog);
       this.renderCatalogList();
       this.callbacks.onCatalogsChanged?.(this.catalogs);
     } catch (err) {
-      console.warn("Failed to load catalogs from database, falling back to defaults:", err);
-      this.catalogs = DEFAULT_CATALOGS.map((c) => ({
-        id: c.id,
-        name: c.name,
-        url: c.url,
-        description: c.description,
-      }));
+      console.warn("Failed to load catalogs from database:", err);
+      this.catalogs = [];
       this.renderCatalogList();
       this.callbacks.onCatalogsChanged?.(this.catalogs);
     }
@@ -373,8 +328,11 @@ export class CatalogsController {
           <div class="empty-icon">📚</div>
           <h2>No Catalogs Configured</h2>
           <p>Add an OPDS catalog feed or import an OPML collection to browse books.</p>
+          <button id="btn-empty-add-catalog" class="btn btn-primary btn-sm">+ Add Catalog</button>
         </div>
       `;
+      const emptyAddBtn = this.elements.catalogList.querySelector<HTMLButtonElement>("#btn-empty-add-catalog");
+      emptyAddBtn?.addEventListener("click", () => this.showAddCatalogModal());
       return;
     }
 

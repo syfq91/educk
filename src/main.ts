@@ -4,7 +4,6 @@ import { LibraryController, type LibraryUiElements } from "./features/library/li
 import { CatalogsController, type CatalogsUiElements } from "./features/catalogs/catalogs-controller.ts";
 import { DatabaseClient, createRepositories, type DatabaseRepositories } from "./services/database/index.ts";
 import { TauriDownloadService } from "./services/downloads/index.ts";
-import { DownloadController, type DownloadUiElements } from "./features/downloads/download-controller.ts";
 import { LocalProgressManager } from "./services/progress/index.ts";
 import {
   createProgressionClient,
@@ -328,81 +327,8 @@ function setupReader(
     });
   }
 
-  // Launch EPUB 3 Sample
-  const btnEpub3 = document.querySelector<HTMLButtonElement>("#btn-open-epub3");
-  btnEpub3?.addEventListener("click", async () => {
-    try {
-      const bookId = "sample-epub3";
-      currentReadingBookId = bookId;
-      if (repos) {
-        const existing = await repos.books.findById(bookId);
-        if (!existing) {
-          await repos.books.insert({
-            id: bookId,
-            title: "Standard Ebooks Sample (EPUB 3)",
-            acquisitionUrl: "/sample.epub",
-            mimeType: "application/epub+zip",
-            localPath: "/sample.epub",
-            fileSize: 45000,
-            downloadedAt: new Date().toISOString(),
-          });
-        }
-      }
-
-      const res = await fetch("/sample.epub");
-      if (!res.ok) throw new Error(`HTTP ${res.status} loading /sample.epub`);
-      const blob = await res.blob();
-
-      const savedProgress = repos ? await repos.progress.findByBookId(bookId) : null;
-      await readerController?.openBook(blob, {
-        bookId,
-        initialPosition: savedProgress?.locator,
-      });
-    } catch (err) {
-      console.error("Failed to open EPUB 3:", err);
-      alert(`Could not open EPUB 3 sample: ${String(err)}`);
-    }
-  });
-
-  // Launch EPUB 2 Sample
-  const btnEpub2 = document.querySelector<HTMLButtonElement>("#btn-open-epub2");
-  btnEpub2?.addEventListener("click", async () => {
-    try {
-      const bookId = "sample-epub2";
-      currentReadingBookId = bookId;
-      if (repos) {
-        const existing = await repos.books.findById(bookId);
-        if (!existing) {
-          await repos.books.insert({
-            id: bookId,
-            title: "Classic Sample (EPUB 2 NCX)",
-            acquisitionUrl: "/sample-epub2.epub",
-            mimeType: "application/epub+zip",
-            localPath: "/sample-epub2.epub",
-            fileSize: 18000,
-            downloadedAt: new Date().toISOString(),
-          });
-        }
-      }
-
-      const res = await fetch("/sample-epub2.epub");
-      if (!res.ok) throw new Error(`HTTP ${res.status} loading /sample-epub2.epub`);
-      const blob = await res.blob();
-
-      const savedProgress = repos ? await repos.progress.findByBookId(bookId) : null;
-      await readerController?.openBook(blob, {
-        bookId,
-        initialPosition: savedProgress?.locator,
-      });
-    } catch (err) {
-      console.error("Failed to open EPUB 2:", err);
-      alert(`Could not open EPUB 2 sample: ${String(err)}`);
-    }
-  });
 }
 
-// Milestone M5 Download Controller Setup
-let downloadController: DownloadController | null = null;
 let toastDismissTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function showAcquisitionToast(book: Book): void {
@@ -434,66 +360,6 @@ function showAcquisitionToast(book: Book): void {
   toastDismissTimeout = setTimeout(() => {
     toast.classList.add("hidden");
   }, 8000);
-}
-
-function setupDownloadManager(
-  repositories: DatabaseRepositories | null,
-  downloadService: TauriDownloadService,
-): DownloadController | null {
-  const container = document.querySelector<HTMLElement>("#download-card");
-  const triggerBtn = document.querySelector<HTMLButtonElement>("#btn-download-sample");
-  const cancelBtn = document.querySelector<HTMLButtonElement>("#btn-cancel-download");
-  const progressBar = document.querySelector<HTMLElement>("#download-progress-container");
-  const progressFill = document.querySelector<HTMLElement>("#download-progress-fill");
-  const statusLabel = document.querySelector<HTMLElement>("#download-status-label");
-  const bytesLabel = document.querySelector<HTMLElement>("#download-bytes-label");
-
-  if (!container || !triggerBtn || !cancelBtn || !progressBar || !progressFill || !statusLabel || !bytesLabel) {
-    return null;
-  }
-
-  if (!repositories) {
-    statusLabel.textContent = "Database offline (Web Preview)";
-    return null;
-  }
-
-  const elements: DownloadUiElements = {
-    container,
-    triggerBtn,
-    cancelBtn,
-    progressBar,
-    progressFill,
-    statusLabel,
-    bytesLabel,
-  };
-
-  downloadController = new DownloadController(elements, downloadService, repositories.books, {
-    onBookAcquired: (book) => {
-      console.log("Book acquired and committed:", book);
-      void libraryController?.loadBooks?.();
-      showAcquisitionToast(book);
-    },
-    onError: (err) => {
-      console.warn("Download error:", err);
-    },
-  });
-
-  triggerBtn.addEventListener("click", async () => {
-    try {
-      const bookId = "sample-downloaded-epub";
-      const sampleUrl = new URL("/sample.epub", window.location.href).href;
-      await downloadController?.startDownload({
-        bookId,
-        url: sampleUrl,
-        title: "Standard Ebooks Sample (Downloaded)",
-        expectedSize: 45000,
-      });
-    } catch (err) {
-      console.error("Failed to start download:", err);
-    }
-  });
-
-  return downloadController;
 }
 
 // Backend version and status initialization
@@ -540,6 +406,7 @@ function setupLibrary(
   repositories: DatabaseRepositories | null,
   readerCtrl: ReaderViewController | null,
   readerEl: ReaderViewElements | null,
+  downloadService: TauriDownloadService,
 ): LibraryController | null {
   const container = document.querySelector<HTMLElement>("#view-library");
   const list = document.querySelector<HTMLElement>("#library-list");
@@ -608,16 +475,24 @@ function setupLibrary(
         console.error("Library error:", err);
       },
       onRedownloadBook: async (book) => {
-        if (book.acquisitionUrl && downloadController) {
+        if (book.acquisitionUrl && repositories) {
           console.log("Re-downloading book from acquisition URL:", book.acquisitionUrl);
           try {
-            await downloadController.startDownload({
+            const result = await downloadService.downloadBook({
               bookId: book.id,
               url: book.acquisitionUrl,
               title: book.title,
               authors: book.authors ?? undefined,
               coverUrl: book.coverUrl ?? undefined,
             });
+            await repositories.books.update({
+              ...book,
+              localPath: result.localPath,
+              fileSize: result.fileSize,
+              downloadedAt: new Date().toISOString(),
+            });
+            void libraryController?.loadBooks?.();
+            showAcquisitionToast(book);
           } catch (dlErr) {
             console.error("Failed to re-download book:", dlErr);
           }
@@ -804,8 +679,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     : null;
   setupReader(progressManager, progressionSyncManager);
   const downloadService = new TauriDownloadService();
-  setupDownloadManager(dbRepos, downloadService);
-  setupLibrary(dbRepos, readerController, getReaderElements());
+  setupLibrary(dbRepos, readerController, getReaderElements(), downloadService);
   profiler.markLibraryReady();
 
   setupCatalogs(dbRepos, downloadService);

@@ -192,6 +192,13 @@
   - (a) Fixed with a `getElementsByTagName`-based qualified-name lookup (`findDescendant`), locked in by Chromium-conformance tests that emulate the browser's throwing selector behaviour plus namespaced-element parsing assertions — all three tests fail without the fix.
   - (b) Implemented navigation drill-down: a `Browse` action on collection entries, card-tap navigation, and breadcrumb push/back through `OPDSClient.getNavigationLink`, which accepts both spec-compliant `rel="subsection"` links and deployed feeds that omit `rel` (Atom's default `alternate`).
   - (c) Added the missing return path out of a populated feed (`← Catalogs` in the feed top bar): previously the only way back to the catalog list was the empty-state button, so opening any feed was a one-way trip.
+- **App Simplification (Samples & Preconfigured Feeds Removal)**:
+  - Removed development prototype cards from Library view in `index.html` (M3 Reader spike card `#btn-open-epub3`/`#btn-open-epub2` and M5 Native Download card `#download-card`/`#btn-download-sample`).
+  - Deleted bundled sample archives `public/sample.epub` and `public/sample-epub2.epub`, reducing app package size.
+  - Refactored corrupted/missing book re-download handling in `src/main.ts` to directly use `DownloadService` and SQLite without prototype UI dependencies.
+  - Removed hardcoded `DEFAULT_CATALOGS` auto-seeding (Standard Ebooks, Project Gutenberg, Feedbooks) in `CatalogsController`, transitioning the app to a clean empty catalogs state with an intuitive `+ Add Catalog` onboarding button.
+  - Cleaned up obsolete CSS rules in `src/styles.css`.
+  - Updated unit test suite in `tests/unit/catalogs-controller.test.ts`. All 279 automated tests across 41 files pass.
 
 ---
 

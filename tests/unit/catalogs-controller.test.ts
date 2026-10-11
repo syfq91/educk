@@ -76,7 +76,19 @@ describe("Milestone M8: CatalogsController", () => {
     vi.stubGlobal("confirm", vi.fn(() => true));
     vi.stubGlobal("alert", vi.fn());
 
-    storedSources = [];
+    storedSources = [
+      {
+        id: "standardebooks",
+        name: "Standard Ebooks",
+        url: "https://standardebooks.org/opds",
+        description: "Free public domain ebooks, beautifully formatted",
+        username: null,
+        authType: "none",
+        authData: null,
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      },
+    ];
 
     mockSourceRepo = {
       findById: vi.fn(async (id: string) => storedSources.find((s) => s.id === id) ?? null),
@@ -276,21 +288,19 @@ describe("Milestone M8: CatalogsController", () => {
     vi.restoreAllMocks();
   });
 
-  it("should seed default catalogs into SQLite when SourceRepository is empty", async () => {
+  it("should render empty state when SourceRepository is empty without seeding any default catalogs", async () => {
+    storedSources = [];
     controller = new CatalogsController(elements, mockDownloadService, mockBookRepo, mockSourceRepo);
     await new Promise((r) => setTimeout(r, 10));
 
-    expect(mockSourceRepo.insert).toHaveBeenCalledTimes(3);
+    expect(mockSourceRepo.insert).not.toHaveBeenCalled();
     const catalogs = controller.getCatalogs();
-    expect(catalogs).toHaveLength(3);
-    expect(catalogs.map((c) => c.name)).toEqual([
-      "Standard Ebooks",
-      "Project Gutenberg",
-      "Feedbooks",
-    ]);
+    expect(catalogs).toHaveLength(0);
 
-    const cards = elements.catalogList.querySelectorAll(".catalog-card");
-    expect(cards.length).toBe(3);
+    const emptyState = elements.catalogList.querySelector(".empty-state");
+    expect(emptyState).not.toBeNull();
+    expect(emptyState?.textContent).toContain("No Catalogs Configured");
+    expect(elements.catalogList.querySelector("#btn-empty-add-catalog")).not.toBeNull();
   });
 
   it("should load existing catalogs from SourceRepository without re-seeding", async () => {
