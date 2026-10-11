@@ -23,7 +23,7 @@ import type {
   OPDSFacet,
   AcquisitionLink,
 } from "../../domain/opds.ts";
-import type { DownloadProgress, DownloadService } from "../../domain/downloads.ts";
+import type { DownloadProgress, DownloadRequest, DownloadService } from "../../domain/downloads.ts";
 import type { Book, BookRepository, SourceRepository, CatalogSource, AuthType } from "../../domain/database.ts";
 import { exportCatalogsToOPML, parseOPML } from "./opml.ts";
 
@@ -1324,7 +1324,10 @@ export class CatalogsController {
   }
 
   private getAuthForCatalog(catalogId: string): OPDSCatalogAuth | undefined {
-    const catalog = this.catalogs.find((c) => c.id === catalogId);
+    let catalog = this.catalogs.find((c) => c.id === catalogId);
+    if (!catalog && this.navigationState?.feedUrl) {
+      catalog = this.catalogs.find((c) => this.navigationState!.feedUrl.startsWith(c.url) || c.url.startsWith(this.navigationState!.feedUrl));
+    }
     return catalog?.auth;
   }
 
@@ -1408,7 +1411,19 @@ export class CatalogsController {
     }
 
     const openAccessLink = this.opdsClient.getOpenAccessLink(entry);
-    const downloadRequest = {
+    const catalogAuth = this.navigationState?.catalogId
+      ? this.getAuthForCatalog(this.navigationState.catalogId)
+      : undefined;
+    const downloadHeaders: Record<string, string> = {};
+    if (catalogAuth) {
+      if (catalogAuth.type === "basic" && catalogAuth.username && catalogAuth.password) {
+        downloadHeaders["Authorization"] = `Basic ${btoa(`${catalogAuth.username}:${catalogAuth.password}`)}`;
+      } else if (catalogAuth.type === "bearer" && catalogAuth.token) {
+        downloadHeaders["Authorization"] = `Bearer ${catalogAuth.token}`;
+      }
+    }
+
+    const downloadRequest: DownloadRequest = {
       bookId,
       url,
       title: entry.title,
@@ -1417,6 +1432,7 @@ export class CatalogsController {
       coverUrl: this.opdsClient.getCoverLink(entry)?.href ?? null,
       sourceId: this.navigationState?.catalogId ?? null,
       remoteId: entry.id,
+      headers: Object.keys(downloadHeaders).length > 0 ? downloadHeaders : undefined,
       expectedSize: openAccessLink?.length,
     };
 

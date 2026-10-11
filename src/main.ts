@@ -478,12 +478,25 @@ function setupLibrary(
         if (book.acquisitionUrl && repositories) {
           console.log("Re-downloading book from acquisition URL:", book.acquisitionUrl);
           try {
+            let headers: Record<string, string> | undefined;
+            if (book.sourceId) {
+              const source = await repositories.sources.findById(book.sourceId);
+              if (source) {
+                if (source.authType === "basic" && source.username && source.authData) {
+                  headers = { Authorization: `Basic ${btoa(`${source.username}:${source.authData}`)}` };
+                } else if (source.authType === "bearer" && source.authData) {
+                  headers = { Authorization: `Bearer ${source.authData}` };
+                }
+              }
+            }
+
             const result = await downloadService.downloadBook({
               bookId: book.id,
               url: book.acquisitionUrl,
               title: book.title,
               authors: book.authors ?? undefined,
               coverUrl: book.coverUrl ?? undefined,
+              headers,
             });
             await repositories.books.update({
               ...book,
