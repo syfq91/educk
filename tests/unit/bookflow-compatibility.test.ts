@@ -142,6 +142,26 @@ describe("BookFlow OPDS & Progression Compatibility", () => {
       expect(titles).toContain("X4 Catalog");
     });
 
+    it("handles BookFlow XML declaration serialized with single quotes (e.g. <?xml version='1.0' encoding='utf-8'?>)", async () => {
+      const feedWithSingleQuotes = BOOKFLOW_ROOT_FEED.replace(
+        '<?xml version="1.0" encoding="utf-8"?>',
+        "<?xml version='1.0' encoding='utf-8'?>",
+      );
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "application/atom+xml;profile=opds-catalog;kind=navigation" }),
+        text: async () => feedWithSingleQuotes,
+      });
+
+      const client = createOPDSClient();
+      const feed = await client.fetchFeed("http://192.168.1.50:8000/opds");
+
+      expect(feed.title).toBe("BookFlow");
+      expect(feed.serverProfile).toBe("bookflow");
+      expect(feed.entries.length).toBe(6);
+    });
+
     it("parses BookFlow acquisition feed with EPUB download, cover, and progression links", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,

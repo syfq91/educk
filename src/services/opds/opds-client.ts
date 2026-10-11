@@ -148,11 +148,15 @@ export class OPDSClient {
     this.currentFeedUrl = feedUrl;
     this.validateSafeXml(xmlText);
 
+    // Normalize XML declaration quotes (e.g. <?xml version='1.0'?> -> <?xml version="1.0"?>)
+    // to ensure compatibility with stricter or quirky XML DOM parsers (such as happy-dom).
+    const normalizedXml = xmlText.replace(/^<\?xml\b[^>]*\?>/i, (decl) => decl.replace(/'/g, '"'));
+
     let doc: Document;
 
     try {
       const parser = new DOMParser();
-      doc = parser.parseFromString(xmlText, "application/xml");
+      doc = parser.parseFromString(normalizedXml, "application/xml");
     } catch (err) {
       throw new OPDSParseError(`Failed to parse XML: ${err instanceof Error ? err.message : String(err)}`, xmlText);
     }
