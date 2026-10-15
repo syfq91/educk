@@ -204,7 +204,7 @@ describe("Milestone M10 Integration: Local Reading Progress", () => {
 
     // Emulate relocate event from reader engine
     const relocateEvent = (cfi: string, fraction: number, chapter: string) => {
-      (reader as any).dispatchEvent("relocate", {
+      (reader as unknown as { dispatchEvent(event: string, payload: unknown): void }).dispatchEvent("relocate", {
         progression: fraction,
         locator: cfi,
         title: chapter,

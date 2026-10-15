@@ -148,7 +148,7 @@ mod tests {
         let path = Path::new("../fixtures/books/valid-sample.epub");
         if path.exists() {
             let res = validate_epub_archive(path);
-            assert!(res.is_ok(), "valid-sample.epub should pass validation: {:?}", res);
+            assert!(res.is_ok(), "valid-sample.epub should pass validation: {res:?}");
             let report = res.unwrap();
             assert!(report.entry_count > 0);
             assert!(report.file_size > 0);
@@ -160,7 +160,7 @@ mod tests {
         let path = Path::new("../fixtures/books/valid-epub2.epub");
         if path.exists() {
             let res = validate_epub_archive(path);
-            assert!(res.is_ok(), "valid-epub2.epub should pass validation: {:?}", res);
+            assert!(res.is_ok(), "valid-epub2.epub should pass validation: {res:?}");
         }
     }
 
@@ -172,7 +172,7 @@ mod tests {
             assert!(res.is_err());
             match res.unwrap_err() {
                 ValidationError::NotAValidZip(_) => {}
-                other => panic!("Expected NotAValidZip, got: {:?}", other),
+                other => panic!("Expected NotAValidZip, got: {other:?}"),
             }
         }
     }
@@ -185,7 +185,7 @@ mod tests {
             assert!(res.is_err());
             match res.unwrap_err() {
                 ValidationError::MissingContainer => {}
-                other => panic!("Expected MissingContainer, got: {:?}", other),
+                other => panic!("Expected MissingContainer, got: {other:?}"),
             }
         }
     }
@@ -248,7 +248,7 @@ mod tests {
             let mut zip = zip::ZipWriter::new(&file);
             let options = zip::write::SimpleFileOptions::default();
             for i in 0..=MAX_ENTRY_COUNT {
-                zip.start_file(format!("file_{}.txt", i), options).unwrap();
+                zip.start_file(format!("file_{i}.txt"), options).unwrap();
             }
             zip.finish().unwrap();
         }

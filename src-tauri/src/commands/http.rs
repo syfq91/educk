@@ -342,6 +342,6 @@ mod tests {
             .send_text(request(&format!("http://{address}")))
             .await
             .expect_err("must fail");
-        assert!(!error.is_empty());
+        assert_ne!(error, "");
     }
 }

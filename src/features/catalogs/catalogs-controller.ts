@@ -70,6 +70,7 @@ export interface CatalogsControllerCallbacks {
   onReadNow?: (bookId: string) => void;
   onError?: (error: Error) => void;
   onCatalogsChanged?: (catalogs: OPDSCatalog[]) => void;
+  opdsClient?: OPDSClient;
 }
 
 const SEARCH_SUGGESTION_TOPICS = [
@@ -111,6 +112,7 @@ export class CatalogsController {
     bookRepo: BookRepository,
     sourceRepo?: SourceRepository | CatalogsControllerCallbacks,
     callbacks?: CatalogsControllerCallbacks,
+    opdsClient?: OPDSClient,
   ) {
     this.elements = elements;
     this.downloadService = downloadService;
@@ -124,7 +126,7 @@ export class CatalogsController {
       this.callbacks = (sourceRepo as CatalogsControllerCallbacks) ?? callbacks ?? {};
     }
 
-    this.opdsClient = createOPDSClient();
+    this.opdsClient = opdsClient ?? this.callbacks.opdsClient ?? createOPDSClient();
 
     // Restore preferred view mode
     try {
@@ -147,6 +149,10 @@ export class CatalogsController {
     this.bindEvents();
     this.setupInfiniteScroll();
     this.loadCatalogs();
+  }
+
+  public getOPDSClient(): OPDSClient {
+    return this.opdsClient;
   }
 
   private createFallbackSourceRepo(): SourceRepository {

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { LibraryController } from "../../src/features/library/library-controller.ts";
+import { ReaderViewController, type ReaderViewElements } from "../../src/features/reader/reader-view.ts";
 import type { Book, BookRepository, ProgressRepository, ReadingProgress as _ReadingProgress } from "../../src/domain/database.ts";
 
 // Mock tauri invoke using vi.hoisted to avoid hoisting issues
@@ -28,10 +29,10 @@ const createMockProgressRepo = (progressMap: Map<string, ReadingProgress> = new 
 // Mock ReaderViewController
 const createMockReaderController = () => ({
   openBook: vi.fn().mockResolvedValue(undefined),
-}) as any;
+}) as unknown as ReaderViewController;
 
 // Mock ReaderViewElements
-const createMockReaderElements = () => ({}) as any;
+const createMockReaderElements = () => ({}) as unknown as ReaderViewElements;
 
 describe("Milestone M6: LibraryController", () => {
   let container: HTMLElement;
@@ -41,8 +42,8 @@ describe("Milestone M6: LibraryController", () => {
   let refreshBtn: HTMLButtonElement;
   let bookRepo: BookRepository;
   let progressRepo: ProgressRepository;
-  let readerController: any;
-  let readerElements: any;
+  let readerController: ReaderViewController;
+  let readerElements: ReaderViewElements;
   let controller: LibraryController;
 
   beforeEach(() => {
@@ -340,13 +341,13 @@ describe("Milestone M6: LibraryController", () => {
 
     await new Promise(r => setTimeout(r, 10));
 
-    const initialCallCount = (bookRepo.findAll as any).mock.calls.length;
+    const initialCallCount = vi.mocked(bookRepo.findAll).mock.calls.length;
 
     refreshBtn.click();
 
     await new Promise(r => setTimeout(r, 10));
 
-    expect((bookRepo.findAll as any).mock.calls.length).toBe(initialCallCount + 1);
+    expect(vi.mocked(bookRepo.findAll).mock.calls.length).toBe(initialCallCount + 1);
   });
 
   it("should show missing file indicator when file not found", async () => {

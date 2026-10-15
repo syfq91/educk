@@ -418,7 +418,7 @@ describe("Milestone M8: CatalogsController", () => {
     controller = new CatalogsController(elements, mockDownloadService, mockBookRepo, mockSourceRepo);
     await controller.loadCatalogs();
     // Mock opdsClient.fetchFeed
-    (controller as any).opdsClient.fetchFeed = vi.fn().mockResolvedValue(feed);
+    controller.getOPDSClient().fetchFeed = vi.fn().mockResolvedValue(feed);
 
     await controller.openCatalog("standardebooks");
 
@@ -454,7 +454,7 @@ describe("Milestone M8: CatalogsController", () => {
   it("should manage search suggestions and execute search", async () => {
     const feed = createMockFeed();
     controller = new CatalogsController(elements, mockDownloadService, mockBookRepo, mockSourceRepo);
-    (controller as any).opdsClient.fetchFeed = vi.fn().mockResolvedValue(feed);
+    controller.getOPDSClient().fetchFeed = vi.fn().mockResolvedValue(feed);
 
     await controller.openCatalog("standardebooks");
 
@@ -504,7 +504,7 @@ describe("Milestone M8: CatalogsController", () => {
 
     controller = new CatalogsController(elements, mockDownloadService, mockBookRepo, mockSourceRepo);
     await controller.loadCatalogs();
-    (controller as any).opdsClient.fetchFeed = vi
+    controller.getOPDSClient().fetchFeed = vi
       .fn()
       .mockResolvedValueOnce(page1Feed)
       .mockResolvedValueOnce(page2Feed);
@@ -529,7 +529,7 @@ describe("Milestone M8: CatalogsController", () => {
       .fn()
       .mockRejectedValueOnce(new Error("Connection refused"))
       .mockResolvedValueOnce(createMockFeed());
-    (controller as any).opdsClient.fetchFeed = fetchFeedMock;
+    controller.getOPDSClient().fetchFeed = fetchFeedMock;
 
     await controller.openCatalog("standardebooks");
 
@@ -552,7 +552,7 @@ describe("Milestone M8: CatalogsController", () => {
     controller = new CatalogsController(elements, mockDownloadService, mockBookRepo, mockSourceRepo);
     await controller.loadCatalogs();
 
-    (controller as any).opdsClient.fetchFeed = vi
+    controller.getOPDSClient().fetchFeed = vi
       .fn()
       .mockRejectedValueOnce(new OPDSAuthError("Authentication required", "https://example.com/opds"));
 
@@ -569,7 +569,7 @@ describe("Milestone M8: CatalogsController", () => {
       onDownloadStarted,
     });
     await controller.loadCatalogs();
-    (controller as any).opdsClient.fetchFeed = vi.fn().mockResolvedValue(feed);
+    controller.getOPDSClient().fetchFeed = vi.fn().mockResolvedValue(feed);
 
     await controller.openCatalog("standardebooks");
 
@@ -616,7 +616,7 @@ describe("Milestone M8: CatalogsController", () => {
     const fetchFeedMock = vi.fn(
       async (url: string) => (url.endsWith("/authors") ? authorsFeed : rootFeed),
     );
-    (controller as any).opdsClient.fetchFeed = fetchFeedMock;
+    controller.getOPDSClient().fetchFeed = fetchFeedMock;
 
     await controller.openCatalog("standardebooks");
 

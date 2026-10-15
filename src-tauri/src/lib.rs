@@ -8,11 +8,6 @@ pub mod tls;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
-#[tauri::command]
 fn get_app_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
@@ -31,7 +26,6 @@ pub fn run() {
     tauri::Builder::default()
         .manage(download_manager)
         .manage(commands::http::HttpClient::new())
-        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(
             tauri_plugin_sql::Builder::default()
@@ -47,7 +41,6 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            greet,
             get_app_version,
             commands::download_book,
             commands::cancel_download,
@@ -66,7 +59,7 @@ mod tests {
     #[test]
     fn test_migration_sql_contains_core_tables() {
         let sql = include_str!("../migrations/001_initial_schema.sql");
-        assert!(!sql.is_empty());
+        assert_ne!(sql, "");
         assert!(sql.contains("CREATE TABLE IF NOT EXISTS sources"));
         assert!(sql.contains("CREATE TABLE IF NOT EXISTS books"));
         assert!(sql.contains("CREATE TABLE IF NOT EXISTS reading_progress"));

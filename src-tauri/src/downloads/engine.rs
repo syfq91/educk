@@ -192,7 +192,7 @@ mod tests {
         let mut progress_count = 0;
         let res = engine
             .stream_to_file(
-                &format!("http://{}", addr),
+                &format!("http://{addr}"),
                 None,
                 &dest_path,
                 cancel_flag,
@@ -202,7 +202,7 @@ mod tests {
             )
             .await;
 
-        assert!(res.is_ok(), "Streaming should succeed: {:?}", res);
+        assert!(res.is_ok(), "Streaming should succeed: {res:?}");
         assert_eq!(res.unwrap(), 12);
         assert!(progress_count > 0);
 
@@ -231,7 +231,7 @@ mod tests {
 
         let res = engine
             .stream_to_file(
-                &format!("http://{}", addr),
+                &format!("http://{addr}"),
                 None,
                 &part_path,
                 cancel_flag,
@@ -262,7 +262,7 @@ mod tests {
 
         let res = engine
             .stream_to_file(
-                &format!("http://{}", addr),
+                &format!("http://{addr}"),
                 None,
                 &part_path,
                 cancel_flag,
@@ -274,7 +274,7 @@ mod tests {
             Err(DownloadError::HttpStatus { status, .. }) => {
                 assert_eq!(status, 404);
             }
-            other => panic!("Expected HttpStatus 404, got: {:?}", other),
+            other => panic!("Expected HttpStatus 404, got: {other:?}"),
         }
     }
 }
