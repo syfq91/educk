@@ -59,6 +59,9 @@ milestones:
   - id: M19
     name: On-Device Browse Correctness (Feed Parsing & Navigation)
     status: complete
+  - id: M20
+    name: Design System Compliance (DESIGN.md)
+    status: complete
 
 tasks:
   - id: GOV-001
@@ -367,7 +370,7 @@ tasks:
     status: done
   - id: SEC-004
     milestone: M14
-    description: Multi-Layered Reader Sandboxing (proactively deny script assets in foliate loader, strip script tags and inline event handlers, neutralize javascript: URLs, and inject per-chapter CSP meta tag)
+    description: 'Multi-Layered Reader Sandboxing (proactively deny script assets in foliate loader, strip script tags and inline event handlers, neutralize javascript: URLs, and inject per-chapter CSP meta tag)'
     status: done
   - id: SEC-005
     milestone: M14
@@ -407,11 +410,11 @@ tasks:
     status: done
   - id: PERF-003
     milestone: M16
-    description: Single Container DOM Event Delegation (delegated click listener on #library-list replacing per-card event closures)
+    description: 'Single Container DOM Event Delegation (delegated click listener on #library-list replacing per-card event closures)'
     status: done
   - id: PERF-004
     milestone: M16
-    description: CSS Rendering Optimizations (content-visibility: auto and contain-intrinsic-size on .book-card and .entry-card)
+    description: 'CSS Rendering Optimizations (content-visibility: auto and contain-intrinsic-size on .book-card and .entry-card)'
     status: done
   - id: PERF-005
     milestone: M16
@@ -458,14 +461,22 @@ tasks:
     description: Navigation-entry drill-down (Browse action, card tap, breadcrumb push/back) so OPDS navigation feeds such as Calibre-Web, Komga, BookFlow and ManyBooks roots can be traversed, plus a `← Catalogs` back action so a populated feed is never a dead end
     status: done
   - id: UX-001
-    milestone: M12
+    milestone: M20
     description: Implement the DESIGN.md monochrome design system in src/styles.css (tokens, inversion for selection, hairline separation, 48dp touch floor, no animation/shadow/gradient)
     status: done
   - id: UX-002
-    milestone: M12
+    milestone: M20
     description: Restrict reader themes to the two DESIGN.md papers (white/warm) with normalization of legacy stored values
     status: done
   - id: UX-003
-    milestone: M12
+    milestone: M20
     description: Add the user-switchable paper background preference shared by the app chrome and the reader
+    status: done
+  - id: UX-004
+    milestone: M20
+    description: Restyle the components introduced by M9-M19 (feed acquisition actions, acquisition toast, progression conflict banner, reader clock/battery, settings slider, corrupted-book recovery modal) to the design system and replace their emoji, spinners and animated progress with static monochrome equivalents
+    status: done
+  - id: UX-005
+    milestone: M20
+    description: Remove the unwired DownloadController and its isolated integration test; the acquisition pipeline is covered end-to-end by m9-integration.test.ts
     status: done

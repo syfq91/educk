@@ -217,14 +217,15 @@
   - Reduced reader themes to the two permitted papers: `ReaderTheme = "white" | "warm"` with `normalizeReaderTheme()` migrating legacy `light`/`dark`/`sepia` values from stored settings; book links are distinguished by underline instead of hue.
   - Unified the background into a single app-wide preference (Settings → Appearance and the reader's White/Warm buttons write the same value; the overlay reads `--color-background`), added in `src/features/settings/paper.ts` as `data-paper` on the document root persisted to `localStorage`.
   - Removed decorative emoji from buttons, nav, empty states, and placeholders; empty states now carry a single call to action; `error` (`#900000`) is the only hue, used solely for errors with a pure-black rule.
-  - Documented the mapping in [docs/design.md](file:///home/syafiq/educk/docs/design.md) and updated `docs/product.md`, `docs/reader.md`, and `docs/README.md`.
+  - Documented the mapping in [docs/design.md](file:///home/syafiq/educk/docs/design.md) and updated `docs/product.md`, `docs/reader.md`, and `docs/README.md`; recorded the pass as milestone **M20** in `docs/tasks.yaml` (UX-001…UX-005).
   - Restyled the components added by milestones M9-M19 (feed acquisition buttons, acquisition toast, progression conflict banner, reader clock/battery, settings slider, corrupted-book recovery modal) to the same rules: hairline borders, no shadow, no motion, no blur, no spinner, and no emoji — while keeping every remote feature working.
-  - Added `tests/unit/paper-setting.test.ts` (7 tests) and reader paper/migration tests.
+  - Removed the unwired `src/features/downloads/download-controller.ts` and its isolated `tests/unit/download-sqlite-integration.test.ts` (dead since the M9 integration refactor; the acquisition pipeline stays covered end-to-end by `tests/unit/m9-integration.test.ts`).
+  - Added `tests/unit/paper-setting.test.ts` (7 tests) and reader paper/migration tests; suite runs 286 tests across 41 files.
 
 ---
 
 ## In Progress
-None. All 19 milestones (M0–M19) and ecosystem compatibility checks are 100% complete!
+None. All 20 milestones (M0–M20) and ecosystem compatibility checks are 100% complete!
 
 ---
 
@@ -247,7 +248,7 @@ v1.0.0 Production Release & Packaging.
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
 - **ESLint (`pnpm run lint`)**: PASS (0 errors, 0 warnings — all 14 pre-existing warnings eliminated)
-- **Unit & Integration Tests (`pnpm test`)**: PASS (289 tests passed across 42 test files)
+- **Unit & Integration Tests (`pnpm test`)**: PASS (286 tests passed across 41 test files)
 - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
 - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
 - **Rust Cargo Tests Check (`cargo check --tests`)**: PASS (0 errors)
