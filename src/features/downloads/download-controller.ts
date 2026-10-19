@@ -54,7 +54,7 @@ export class DownloadController {
     this.elements.cancelBtn.disabled = false;
     this.elements.progressBar.classList.remove("hidden");
     this.elements.statusLabel.textContent = "Starting download...";
-    this.elements.statusLabel.style.color = "var(--text-secondary)";
+    this.elements.statusLabel.style.color = "var(--color-secondary)";
     this.elements.progressFill.style.width = "0%";
     this.elements.bytesLabel.textContent = "0 KB";
 
@@ -80,7 +80,7 @@ export class DownloadController {
       await this.bookRepo.insert(bookRecord);
 
       this.elements.statusLabel.textContent = "Download complete & verified!";
-      this.elements.statusLabel.style.color = "var(--status-success)";
+      this.elements.statusLabel.style.color = "var(--color-primary)";
       this.elements.progressFill.style.width = "100%";
       this.elements.cancelBtn.disabled = true;
       this.elements.triggerBtn.disabled = false;
@@ -93,7 +93,7 @@ export class DownloadController {
       this.elements.statusLabel.textContent = errMsg.includes("cancelled")
         ? "Download cancelled"
         : `Download failed: ${errMsg}`;
-      this.elements.statusLabel.style.color = "var(--status-error)";
+      this.elements.statusLabel.style.color = "var(--color-error)";
       this.elements.cancelBtn.disabled = true;
       this.elements.triggerBtn.disabled = false;
       this.activeBookId = null;
@@ -119,18 +119,18 @@ export class DownloadController {
       }
     } else if (progress.status === "verifying") {
       this.elements.statusLabel.textContent = "Verifying EPUB archive integrity...";
-      this.elements.statusLabel.style.color = "var(--accent-primary)";
+      this.elements.statusLabel.style.color = "var(--color-primary)";
       this.elements.progressFill.style.width = "100%";
     } else if (progress.status === "completed") {
       this.elements.statusLabel.textContent = "Verified and stored!";
-      this.elements.statusLabel.style.color = "var(--status-success)";
+      this.elements.statusLabel.style.color = "var(--color-primary)";
       this.elements.progressFill.style.width = "100%";
     } else if (progress.status === "cancelled") {
       this.elements.statusLabel.textContent = "Download cancelled";
-      this.elements.statusLabel.style.color = "var(--text-secondary)";
+      this.elements.statusLabel.style.color = "var(--color-secondary)";
     } else if (progress.status === "failed") {
       this.elements.statusLabel.textContent = progress.error ?? "Download failed";
-      this.elements.statusLabel.style.color = "var(--status-error)";
+      this.elements.statusLabel.style.color = "var(--color-error)";
     }
   }
 

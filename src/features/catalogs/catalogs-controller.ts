@@ -8,7 +8,7 @@
  * - Facet filtering chips (genres, authors, sort options)
  * - Search suggestions & recent searches dropdown
  * - Catalog import/export via OPML
- * - Loading skeletons, network error retry, and 401/403 auth prompts
+ * - Static loading indicator, network error retry, and 401/403 auth prompts
  * - Initiates downloads via DownloadService
  */
 
@@ -331,7 +331,6 @@ export class CatalogsController {
     if (this.catalogs.length === 0) {
       this.elements.catalogList.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">📚</div>
           <h2>No Catalogs Configured</h2>
           <p>Add an OPDS catalog feed or import an OPML collection to browse books.</p>
           <button id="btn-empty-add-catalog" class="btn btn-primary btn-sm">+ Add Catalog</button>
@@ -578,7 +577,7 @@ export class CatalogsController {
 
     let actionBtnHtml: string;
     if (isDownloaded) {
-      actionBtnHtml = `<button class="btn-read-now" data-book-id="${bookId}" data-entry-id="${entry.id}">📖 Read Now</button>`;
+      actionBtnHtml = `<button class="btn-read-now" data-book-id="${bookId}" data-entry-id="${entry.id}">Read Now</button>`;
     } else if (isDownloading) {
       const percent = downloadProgress && downloadProgress.totalBytes && downloadProgress.totalBytes > 0
         ? Math.round((downloadProgress.progress >= 0 ? downloadProgress.progress : 0) * 100)
@@ -586,7 +585,7 @@ export class CatalogsController {
       const statusText = downloadProgress?.status === "verifying" ? "Verifying..." : `Downloading (${percent}%)`;
       actionBtnHtml = `
         <button class="btn-downloading" data-book-id="${bookId}" data-entry-id="${entry.id}" disabled>
-          <span class="spinner">⏳</span> ${statusText}
+          ${statusText}
         </button>
       `;
     } else if (hasAcquisition) {
@@ -697,7 +696,7 @@ export class CatalogsController {
           ${coverLink
             ? `<img src="${coverLink.href}" alt="" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />`
             : ""}
-          <div class="cover-placeholder" style="display: ${coverLink ? "none" : "flex"};">📖</div>
+          <div class="cover-placeholder" style="display: ${coverLink ? "none" : "flex"};">No cover</div>
         </div>
         <div class="entry-info">
           <h3 class="entry-title">${this.escapeHtml(entry.title)}</h3>
@@ -724,7 +723,7 @@ export class CatalogsController {
           ${coverLink
             ? `<img src="${coverLink.href}" alt="" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />`
             : ""}
-          <div class="cover-placeholder" style="display: ${coverLink ? "none" : "flex"};">📖</div>
+          <div class="cover-placeholder" style="display: ${coverLink ? "none" : "flex"};">No cover</div>
         </div>
         <div class="entry-info">
           <h3 class="entry-title" title="${this.escapeHtml(entry.title)}">${this.escapeHtml(entry.title)}</h3>
@@ -939,7 +938,6 @@ export class CatalogsController {
       for (const item of filteredRecents) {
         html += `
           <div class="suggestion-item" data-suggestion="${this.escapeHtml(item)}">
-            <span class="suggestion-icon">🕒</span>
             <span>${this.escapeHtml(item)}</span>
           </div>
         `;
@@ -951,7 +949,6 @@ export class CatalogsController {
       for (const topic of filteredTopics.slice(0, 5)) {
         html += `
           <div class="suggestion-item" data-suggestion="${this.escapeHtml(topic)}">
-            <span class="suggestion-icon">🔍</span>
             <span>${this.escapeHtml(topic)}</span>
           </div>
         `;
@@ -1507,9 +1504,9 @@ export class CatalogsController {
 
     let actionBtnHtml = "";
     if (isDownloaded) {
-      actionBtnHtml = `<button class="btn btn-primary modal-read-now" data-book-id="${bookId}">📖 Read Now</button>`;
+      actionBtnHtml = `<button class="btn btn-primary modal-read-now" data-book-id="${bookId}">Read Now</button>`;
     } else if (isDownloading) {
-      actionBtnHtml = `<button class="btn btn-secondary modal-downloading" disabled>⏳ Downloading...</button>`;
+      actionBtnHtml = `<button class="btn btn-secondary modal-downloading" disabled>Downloading...</button>`;
     } else if (hasAcquisition) {
       actionBtnHtml = `<button class="btn btn-primary modal-acquire" data-entry-id="${entry.id}">⬇️ ${openAccessLink ? "Download EPUB" : "Acquire EPUB"}</button>`;
     }

@@ -3,12 +3,16 @@ import {
   ReaderViewController,
   type ReaderViewElements,
 } from "../../src/features/reader/reader-view.ts";
+import type { ReaderTheme } from "../../src/domain/reader.ts";
 
 describe("Milestone M3: ReaderViewController Feature Unit Tests", () => {
   let elements: ReaderViewElements;
   let controller: ReaderViewController;
 
   beforeEach(() => {
+    window.localStorage.clear();
+    delete document.documentElement.dataset.paper;
+
     document.body.innerHTML = `
       <div id="reader-view" class="reader-overlay hidden">
         <header class="reader-header">
@@ -36,9 +40,8 @@ describe("Milestone M3: ReaderViewController Feature Unit Tests", () => {
         <footer class="reader-footer">
           <input type="range" id="reader-progress-slider" min="0" max="1" step="0.001" value="0" />
           <div class="reader-theme-selector">
-            <button class="theme-btn active" data-theme="light">Light</button>
-            <button class="theme-btn" data-theme="sepia">Sepia</button>
-            <button class="theme-btn" data-theme="dark">Dark</button>
+            <button class="theme-btn active" data-theme="white">White</button>
+            <button class="theme-btn" data-theme="warm">Warm</button>
           </div>
           <div class="reader-font-controls">
             <button id="btn-font-smaller">A-</button>
@@ -90,7 +93,7 @@ describe("Milestone M3: ReaderViewController Feature Unit Tests", () => {
     };
 
     controller = new ReaderViewController(elements, {
-      theme: "light",
+      theme: "white",
       fontSize: 18,
       lineSpacing: 1.5,
       fontFamily: "sans-serif",
@@ -99,6 +102,8 @@ describe("Milestone M3: ReaderViewController Feature Unit Tests", () => {
   });
 
   afterEach(() => {
+    window.localStorage.clear();
+    delete document.documentElement.dataset.paper;
     document.body.innerHTML = "";
   });
 
@@ -159,5 +164,37 @@ describe("Milestone M3: ReaderViewController Feature Unit Tests", () => {
 
     elements.tapZoneCenter?.click();
     expect(elements.overlay.classList.contains("bars-hidden")).toBe(false);
+  });
+
+  it("should support only the two DESIGN.md papers (white and warm)", () => {
+    const whiteBtn = Array.from(elements.themeButtons).find((b) => b.dataset.theme === "white");
+    const warmBtn = Array.from(elements.themeButtons).find((b) => b.dataset.theme === "warm");
+
+    expect(whiteBtn).toBeDefined();
+    expect(warmBtn).toBeDefined();
+    expect(controller.getSettings().theme).toBe("white");
+    expect(whiteBtn?.classList.contains("active")).toBe(true);
+    expect(document.documentElement.dataset.paper).toBe("white");
+
+    warmBtn?.click();
+
+    // The reading paper is the app-wide preference: it is applied to the
+    // document root and persisted, so chrome and reader cannot disagree.
+    expect(controller.getSettings().theme).toBe("warm");
+    expect(warmBtn?.classList.contains("active")).toBe(true);
+    expect(whiteBtn?.classList.contains("active")).toBe(false);
+    expect(document.documentElement.dataset.paper).toBe("warm");
+    expect(window.localStorage.getItem("educk.paper")).toBe("warm");
+  });
+
+  it("should migrate legacy stored themes to a supported paper", () => {
+    controller.applySettings({ theme: "dark" as unknown as ReaderTheme });
+    expect(controller.getSettings().theme).toBe("white");
+
+    controller.applySettings({ theme: "sepia" as unknown as ReaderTheme });
+    expect(controller.getSettings().theme).toBe("warm");
+
+    controller.applySettings({ theme: "light" as unknown as ReaderTheme });
+    expect(controller.getSettings().theme).toBe("white");
   });
 });

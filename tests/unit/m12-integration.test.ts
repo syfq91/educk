@@ -44,10 +44,8 @@ describe("Milestone M12: Reader UX & Settings Integration Tests", () => {
     document.body.innerHTML = `
       <section id="view-settings">
         <select id="pref-theme">
-          <option value="light">Light</option>
-          <option value="sepia">Sepia</option>
-          <option value="dark">Dark</option>
-          <option value="amoled">Black</option>
+          <option value="white">White</option>
+          <option value="warm">Warm</option>
         </select>
         <select id="pref-font-family">
           <option value="sans-serif">Sans-Serif</option>
@@ -97,10 +95,8 @@ describe("Milestone M12: Reader UX & Settings Integration Tests", () => {
         <footer class="reader-footer">
           <input type="range" id="reader-progress-slider" min="0" max="1" step="0.001" value="0" />
           <div class="reader-theme-selector">
-            <button class="theme-btn active" data-theme="light">Light</button>
-            <button class="theme-btn" data-theme="sepia">Sepia</button>
-            <button class="theme-btn" data-theme="dark">Dark</button>
-            <button class="theme-btn" data-theme="amoled">Black</button>
+            <button class="theme-btn active" data-theme="white">White</button>
+            <button class="theme-btn" data-theme="warm">Warm</button>
           </div>
           <div class="reader-font-controls">
             <button id="btn-font-smaller">A-</button>
@@ -187,7 +183,7 @@ describe("Milestone M12: Reader UX & Settings Integration Tests", () => {
     controller = new ReaderViewController(
       elements,
       {
-        theme: "light",
+        theme: "white",
         fontSize: 18,
         fontFamily: "sans-serif",
         lineSpacing: 1.5,
@@ -208,11 +204,11 @@ describe("Milestone M12: Reader UX & Settings Integration Tests", () => {
     elements.fontFamilySelect!.value = "opendyslexic";
     elements.fontFamilySelect!.dispatchEvent(new Event("change"));
 
-    // 3. Change theme to AMOLED
-    const amoledBtn = Array.from(elements.themeButtons).find(
-      (b) => b.getAttribute("data-theme") === "amoled",
+    // 3. Change the paper to warm
+    const warmBtn = Array.from(elements.themeButtons).find(
+      (b) => b.getAttribute("data-theme") === "warm",
     )!;
-    amoledBtn.click();
+    warmBtn.click();
 
     // 4. Change line spacing to 1.8
     elements.lineSpacingSelect!.value = "1.8";
@@ -226,7 +222,7 @@ describe("Milestone M12: Reader UX & Settings Integration Tests", () => {
     const saved = await settingsRepo.getJSON<ReaderSettings>("reader.settings");
     expect(saved).toBeDefined();
     expect(saved).toEqual({
-      theme: "amoled",
+      theme: "warm",
       fontSize: 24,
       fontFamily: "opendyslexic",
       lineSpacing: 1.8,
@@ -237,7 +233,7 @@ describe("Milestone M12: Reader UX & Settings Integration Tests", () => {
   it("should restore saved settings on fresh app launch and correctly style UI", async () => {
     // Seed SQLite database with pre-existing user preferences
     const preSaved: ReaderSettings = {
-      theme: "amoled",
+      theme: "warm",
       fontSize: 22,
       fontFamily: "opendyslexic",
       lineSpacing: 1.8,
@@ -253,13 +249,14 @@ describe("Milestone M12: Reader UX & Settings Integration Tests", () => {
     controller = new ReaderViewController(elements, loadedSettings!);
 
     // Verify Reader UI reflection
-    expect(controller.getSettings().theme).toBe("amoled");
+    expect(controller.getSettings().theme).toBe("warm");
     expect(controller.getSettings().fontSize).toBe(22);
     expect(controller.getSettings().fontFamily).toBe("opendyslexic");
     expect(controller.getSettings().lineSpacing).toBe(1.8);
     expect(controller.getSettings().margin).toBe("wide");
 
-    expect(elements.overlay.classList.contains("theme-amoled")).toBe(true);
+    // The paper preference is applied app-wide via `data-paper`.
+    expect(document.documentElement.dataset.paper).toBe("warm");
     expect(elements.fontSizeLabel.textContent).toBe("22px");
     expect(elements.settingsFontSizeLabel!.textContent).toBe("22px");
     expect(elements.fontSizeSlider!.value).toBe("22");

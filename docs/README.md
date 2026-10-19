@@ -13,6 +13,7 @@ Welcome to the **educk** technical and architectural documentation directory.
 - [reader.md](reader.md): Foliate-js reader integration, shadow DOM architecture, and spike findings.
 - [server-compatibility.md](server-compatibility.md): OPDS server heuristics, compatibility profiles, and normalization.
 - [performance.md](performance.md): Performance budgets, startup marks, 60fps scrolling, and streaming memory architecture.
+- [design.md](design.md): DESIGN.md design-system implementation — tokens, enforced rules, and component mapping.
 - [testing.md](testing.md): Testing tiers (Vitest, Cargo tests, fixtures, Android lifecycle).
 - [e2e-testing.md](e2e-testing.md): Automated End-to-End Golden Path testing and standalone fake OPDS/progression server.
 

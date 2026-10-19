@@ -11,9 +11,10 @@
  */
 
 import { FoliateReaderAdapter } from "../../services/reader/foliate-adapter.ts";
+import { normalizeReaderTheme } from "../../domain/reader.ts";
+import { applyPaper, setPaper } from "../settings/paper.ts";
 import type {
   Reader,
-  ReaderTheme,
   ReaderFontFamily,
   ReaderMargin,
   ReaderSettings,
@@ -95,7 +96,7 @@ export class ReaderViewController {
     this.elements = elements;
     this.callbacks = callbacks ?? {};
     this.settings = {
-      theme: initialSettings?.theme ?? "light",
+      theme: normalizeReaderTheme(initialSettings?.theme),
       fontSize: initialSettings?.fontSize ?? 18,
       lineSpacing: initialSettings?.lineSpacing ?? 1.5,
       fontFamily: initialSettings?.fontFamily ?? "sans-serif",
@@ -215,6 +216,8 @@ export class ReaderViewController {
 
   public applySettings(newSettings: Partial<ReaderSettings>): void {
     this.settings = { ...this.settings, ...newSettings };
+    // Only the two DESIGN.md papers exist; legacy stored values are migrated.
+    this.settings.theme = normalizeReaderTheme(this.settings.theme);
     this.syncSettingsUi();
     if (this.reader) {
       if (newSettings.theme) void this.reader.setTheme(this.settings.theme);
@@ -254,23 +257,17 @@ export class ReaderViewController {
       }
     });
 
-    const themeBg: Record<ReaderTheme, { bg: string; text: string }> = {
-      light: { bg: "#ffffff", text: "#1a1a1a" },
-      dark: { bg: "#121212", text: "#e0e0e0" },
-      sepia: { bg: "#f4ecd8", text: "#3d2b1f" },
-      amoled: { bg: "#000000", text: "#d4d4d4" },
-    };
-    const t = this.settings.theme;
-    if (themeBg[t]) {
-      this.elements.overlay.style.backgroundColor = themeBg[t].bg;
-      this.elements.overlay.style.color = themeBg[t].text;
-    }
+    this.applyPaperPreference();
+  }
 
-    if (t === "amoled") {
-      this.elements.overlay.classList.add("theme-amoled");
-    } else {
-      this.elements.overlay.classList.remove("theme-amoled");
-    }
+  /**
+   * Applies the reader's paper to the whole app. DESIGN.md permits exactly
+   * two backgrounds (pure white and warm paper white) and they are shared with
+   * the rest of the chrome: the overlay reads `--color-background`, which is
+   * driven by `data-paper` on the document root.
+   */
+  private applyPaperPreference(): void {
+    applyPaper(this.settings.theme);
   }
 
   private updateClock(): void {
@@ -293,8 +290,8 @@ export class ReaderViewController {
           this.onBatteryChange = () => {
             if (this.elements.batteryDisplay) {
               const pct = Math.round(battery.level * 100);
-              const icon = battery.charging ? "⚡" : "🔋";
-              this.elements.batteryDisplay.textContent = `${icon} ${pct}%`;
+              const state = battery.charging ? "Charging" : "Battery";
+              this.elements.batteryDisplay.textContent = `${state} ${pct}%`;
               this.elements.batteryDisplay.classList.remove("hidden");
             }
           };
@@ -565,26 +562,16 @@ export class ReaderViewController {
     // Theme selector
     this.elements.themeButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
-        const theme = btn.dataset.theme as ReaderTheme;
-        if (!theme) return;
+        const rawTheme = btn.dataset.theme;
+        if (!rawTheme) return;
+        const theme = normalizeReaderTheme(rawTheme);
         this.settings.theme = theme;
         this.elements.themeButtons.forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
 
-        const themeBg: Record<ReaderTheme, { bg: string; text: string }> = {
-          light: { bg: "#ffffff", text: "#1a1a1a" },
-          dark: { bg: "#121212", text: "#e0e0e0" },
-          sepia: { bg: "#f4ecd8", text: "#3d2b1f" },
-          amoled: { bg: "#000000", text: "#d4d4d4" },
-        };
-        const tBg = themeBg[theme] || themeBg.light;
-        this.elements.overlay.style.backgroundColor = tBg.bg;
-        this.elements.overlay.style.color = tBg.text;
-        if (theme === "amoled") {
-          this.elements.overlay.classList.add("theme-amoled");
-        } else {
-          this.elements.overlay.classList.remove("theme-amoled");
-        }
+        // The reading paper is the app-wide preference; persisting it keeps the
+        // chrome and the reader from ever disagreeing.
+        setPaper(theme);
 
         void this.reader?.setTheme(theme);
         this.callbacks.onSettingsChange?.(this.settings);

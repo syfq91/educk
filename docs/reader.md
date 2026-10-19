@@ -99,7 +99,7 @@ Application code interacts exclusively with the `Reader` domain interface:
 ```typescript
 const adapter = new FoliateReaderAdapter({
   container: document.getElementById("reader-mount")!,
-  initialSettings: { theme: "light", fontSize: 18 },
+  initialSettings: { theme: "white", fontSize: 18 },
 });
 
 // Load local EPUB Blob
@@ -110,8 +110,8 @@ await adapter.next();
 await adapter.previous();
 await adapter.goTo("epubcfi(/6/4[ch1]!/4/2/10)");
 
-// Appearance
-await adapter.setTheme("sepia"); // "light" | "dark" | "sepia"
+// Appearance — only the two DESIGN.md papers exist
+await adapter.setTheme("warm"); // "white" | "warm"
 await adapter.setFontSize(20);   // Clamped between 12 and 36 px
 
 // Teardown

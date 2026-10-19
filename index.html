@@ -36,9 +36,9 @@
           </div>
           <div id="library-list" class="library-list"></div>
           <div id="library-empty" class="empty-state hidden">
-            <div class="empty-icon">📚</div>
             <h2>Your Library is Empty</h2>
             <p>Download books from OPDS catalogs to add your first book.</p>
+            <button id="btn-empty-browse" class="btn btn-primary">Browse Catalogs</button>
           </div>
         </section>
 
@@ -77,21 +77,15 @@
               <div id="feed-facets" class="feed-facets hidden"></div>
             </header>
             <div id="feed-loading" class="feed-loading hidden">
-              <div class="skeleton-grid">
-                <div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line full"></div><div class="skeleton-line half"></div></div>
-                <div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line full"></div><div class="skeleton-line half"></div></div>
-                <div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line full"></div><div class="skeleton-line half"></div></div>
-                <div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line full"></div><div class="skeleton-line half"></div></div>
-              </div>
+              <p class="loading-label">[ Loading... ]</p>
             </div>
             <div id="feed-error" class="feed-error hidden"></div>
             <div id="feed-list" class="feed-list view-grid"></div>
             <div id="feed-scroll-sentinel" class="feed-scroll-sentinel"></div>
             <div id="feed-empty" class="empty-state hidden">
-              <div class="empty-icon">📭</div>
               <h2>No Books Found</h2>
               <p>This catalog section appears to be empty.</p>
-              <button id="btn-feed-empty-back" class="btn btn-secondary btn-sm">← Back to Catalogs</button>
+              <button id="btn-feed-empty-back" class="btn btn-secondary">← Back to Catalogs</button>
             </div>
             <div class="feed-pagination">
               <button id="feed-prev" class="btn btn-secondary btn-sm" disabled>← Prev</button>
@@ -178,17 +172,17 @@
         <!-- View: Settings (Production Reader Preferences & About) -->
         <section id="view-settings" class="view-panel">
           <div class="settings-card">
-            <h3>Reader Preferences</h3>
-            <p>Configure default typography and theme for reading.</p>
-            <div class="settings-row">
-              <label for="pref-theme">Default Theme:</label>
-              <select id="pref-theme" class="setting-select">
-                <option value="light">Light</option>
-                <option value="sepia">Sepia</option>
-                <option value="dark">Dark</option>
-                <option value="amoled">Black (AMOLED)</option>
-              </select>
+            <h3>Appearance</h3>
+            <p>Two paper backgrounds are supported: pure white and a warm paper white. Nothing else varies.</p>
+            <div class="paper-toggle" role="group" aria-label="Background">
+              <button type="button" class="btn-paper active" data-paper="white" aria-pressed="true">White</button>
+              <button type="button" class="btn-paper" data-paper="warm" aria-pressed="false">Warm</button>
             </div>
+          </div>
+
+          <div class="settings-card">
+            <h3>Reader Preferences</h3>
+            <p>Configure default typography for reading.</p>
             <div class="settings-row">
               <label for="pref-font-family">Default Font:</label>
               <select id="pref-font-family" class="setting-select">
@@ -241,15 +235,12 @@
       <!-- Bottom Navigation Bar for Mobile -->
       <nav class="bottom-nav">
         <button class="nav-item active" data-target="view-library">
-          <span class="nav-icon">📖</span>
           <span class="nav-label">Library</span>
         </button>
         <button class="nav-item" data-target="view-catalogs">
-          <span class="nav-icon">🔍</span>
           <span class="nav-label">Catalogs</span>
         </button>
         <button class="nav-item" data-target="view-settings">
-          <span class="nav-icon">⚙️</span>
           <span class="nav-label">Settings</span>
         </button>
       </nav>
@@ -258,14 +249,13 @@
     <!-- Global Acquisition Toast Notification (Milestone M9) -->
     <div id="acquisition-toast" class="acquisition-toast hidden" role="alert" aria-live="polite">
       <div class="toast-content">
-        <span class="toast-icon">📚</span>
         <div class="toast-text">
           <div class="toast-title" id="toast-title">Download complete</div>
           <div class="toast-subtitle" id="toast-subtitle">Ready to read offline</div>
         </div>
       </div>
       <div class="toast-actions">
-        <button id="toast-btn-read" class="btn btn-primary btn-sm">📖 Read Now</button>
+        <button id="toast-btn-read" class="btn btn-primary btn-sm">Read Now</button>
         <button id="toast-btn-close" class="btn-toast-close" aria-label="Close notification">✕</button>
       </div>
     </div>
@@ -274,14 +264,13 @@
     <div id="book-recovery-modal" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="recovery-title">
       <div class="modal recovery-modal">
         <div class="modal-header">
-          <span class="modal-icon">⚠️</span>
           <h3 id="recovery-title">Unable to Open Book</h3>
         </div>
         <p id="recovery-message">The book file appears to be damaged or missing and could not be opened.</p>
         <div id="recovery-error-detail" class="recovery-error-detail hidden"></div>
         <div class="form-actions recovery-actions">
-          <button id="btn-recovery-redownload" class="btn btn-primary btn-sm hidden">🔄 Re-download Book</button>
-          <button id="btn-recovery-delete" class="btn btn-danger btn-sm">🗑 Remove</button>
+          <button id="btn-recovery-redownload" class="btn btn-primary btn-sm hidden">Re-download Book</button>
+          <button id="btn-recovery-delete" class="btn btn-danger btn-sm">Remove</button>
           <button id="btn-recovery-dismiss" class="btn btn-secondary btn-sm modal-close">Cancel</button>
         </div>
       </div>
@@ -298,7 +287,7 @@
         </div>
         <div id="reader-status-indicators" class="reader-status-indicators">
           <span id="reader-clock" class="reader-clock">12:00</span>
-          <span id="reader-battery" class="reader-battery hidden">🔋 100%</span>
+          <span id="reader-battery" class="reader-battery hidden">Battery 100%</span>
         </div>
         <button id="reader-btn-settings" class="reader-nav-btn" aria-label="Reader Settings">Aa</button>
         <div id="reader-progress-badge" class="reader-progress-badge">0%</div>
@@ -307,7 +296,6 @@
       <!-- Progression Sync Conflict Banner (Milestone M11) -->
       <div id="reader-conflict-banner" class="reader-conflict-banner hidden" role="alert">
         <div class="conflict-content">
-          <span class="conflict-icon">🔄</span>
           <div class="conflict-text">
             <div class="conflict-title">Sync Conflict Detected</div>
             <div id="conflict-desc" class="conflict-desc">Newer reading progress found from another device.</div>
@@ -349,10 +337,8 @@
 
         <div class="reader-controls-row">
           <div class="reader-theme-selector">
-            <button class="theme-btn active" data-theme="light">Light</button>
-            <button class="theme-btn" data-theme="sepia">Sepia</button>
-            <button class="theme-btn" data-theme="dark">Dark</button>
-            <button class="theme-btn" data-theme="amoled">Black</button>
+            <button class="theme-btn active" data-theme="white">White</button>
+            <button class="theme-btn" data-theme="warm">Warm</button>
           </div>
 
           <div class="reader-font-controls">

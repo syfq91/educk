@@ -12,7 +12,7 @@ describe("Milestone M3: FoliateReaderAdapter Production Contract", () => {
     adapter = new FoliateReaderAdapter({
       container,
       initialSettings: {
-        theme: "light",
+        theme: "white",
         fontSize: 16,
         fontFamily: "sans-serif",
         lineSpacing: 1.5,
@@ -79,10 +79,9 @@ describe("Milestone M3: FoliateReaderAdapter Production Contract", () => {
     await adapter.setMargin("normal");
   });
 
-  it("should switch between light, dark, and sepia themes cleanly", async () => {
-    await adapter.setTheme("dark");
-    await adapter.setTheme("sepia");
-    await adapter.setTheme("light");
+  it("should switch between the two supported papers cleanly", async () => {
+    await adapter.setTheme("warm");
+    await adapter.setTheme("white");
   });
 
   it("should return empty TOC before book is loaded", async () => {

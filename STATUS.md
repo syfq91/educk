@@ -74,7 +74,7 @@
   - Implemented search suggestions dropdown (`#feed-search-suggestions`) with recent search history persistence, clear history, and popular curated topic suggestions.
   - Implemented OPML 2.0 import and export engine (`src/features/catalogs/opml.ts`) for sharing catalog collections, with XML sanitization and deduplication.
   - Implemented infinite scroll using `IntersectionObserver` on sentinel elements alongside standard pagination controls.
-  - Implemented loading skeleton shimmer cards matching layout geometry.
+  - Implemented loading skeleton shimmer cards matching layout geometry (later replaced by a static indicator during the DESIGN.md compliance pass below).
   - Implemented resilient network error state with user-facing retry button.
   - Implemented HTTP 401/403 authentication prompt modal (`#feed-auth-modal`) saving Basic/Bearer credentials directly to SQLite `SourceRepository` and retrying.
   - Resolved Rust toolchain compilation by decoupling catalog persistence from broken `sqlx` macros to pure TypeScript `SourceRepository`.
@@ -116,7 +116,7 @@
   - Integrated Screen Wake Lock API (`navigator.wakeLock`) during active reading sessions with lifecycle pause on app backgrounding and release on reader close/destroy.
   - Added continuous typography font size slider (12px to 36px) bidirectionally synced with A- / A+ buttons and live labels.
   - Added `OpenDyslexic` accessible font family support in `FoliateReaderAdapter` with specialized letter and word spacing.
-  - Added true pitch-black AMOLED theme (`#000000`, `theme-amoled`) for maximum OLED battery savings on mobile displays.
+  - Added true pitch-black AMOLED theme (`#000000`, `theme-amoled`) for maximum OLED battery savings on mobile displays (later replaced by the two-paper model in the DESIGN.md compliance pass below).
   - Added comprehensive Reader Preferences panel to the global Settings tab, synchronizing defaults with the reader drawer and SQLite `SettingsRepository` in real-time.
   - Created unit test suite `tests/unit/reader-ux.test.ts` (8 tests) and integration test suite `tests/unit/m12-integration.test.ts` (2 tests). Total 180 automated tests passing across 30 test files.
 - **Milestone M13 (Android Lifecycle & Reliability)**:
@@ -208,6 +208,18 @@
   - Refactored `catalogs-controller.test.ts`, `library-controller.test.ts`, and `m10-integration.test.ts` to eliminate all 14 `@typescript-eslint/no-explicit-any` ESLint warnings.
   - Formatted Rust inlined arguments (`format!("{addr}")`), statement semicolons, and `assert_ne!` test assertions across `src-tauri/src/`.
   - All 280 automated unit and integration tests across 41 test files pass. ESLint is 100% clean with 0 warnings.
+- **Design System Compliance (DESIGN.md — "educk E-Paper")**:
+  - Rewrote `src/styles.css` as the token layer defined by the `DESIGN.md` frontmatter: exact colors, serif/sans type scale in `rem` (the web's `sp`), `0`/`4px` radius only, 8/12/16/24px spacing, 1dp/2dp borders, and a 48px touch-target floor.
+  - Removed every accent hue (blue `#2563eb`, green, `#ef4444` red), all dark-mode media queries, shadows, gradients, blur, translucency, transitions, animations, and the shimmer `@keyframes`. Selection/emphasis is now signalled purely by inversion (`#111111` fill / `#ffffff` text).
+  - Converted stacked sections and repeated rows to hairline separation: shared 1dp rules, `border-bottom` row dividers with no gaps, and a true hairline grid for the OPDS grid view.
+  - Progress bars are static 5px (`surface-subtle` track, `primary` fill); loading feedback is the static text `[ Loading... ]` instead of skeleton shimmer.
+  - Added the missing `.hidden { display: none !important; }` utility, which had no definition — hidden panels, empty states, modals, and the file input were previously rendered.
+  - Reduced reader themes to the two permitted papers: `ReaderTheme = "white" | "warm"` with `normalizeReaderTheme()` migrating legacy `light`/`dark`/`sepia` values from stored settings; book links are distinguished by underline instead of hue.
+  - Unified the background into a single app-wide preference (Settings → Appearance and the reader's White/Warm buttons write the same value; the overlay reads `--color-background`), added in `src/features/settings/paper.ts` as `data-paper` on the document root persisted to `localStorage`.
+  - Removed decorative emoji from buttons, nav, empty states, and placeholders; empty states now carry a single call to action; `error` (`#900000`) is the only hue, used solely for errors with a pure-black rule.
+  - Documented the mapping in [docs/design.md](file:///home/syafiq/educk/docs/design.md) and updated `docs/product.md`, `docs/reader.md`, and `docs/README.md`.
+  - Restyled the components added by milestones M9-M19 (feed acquisition buttons, acquisition toast, progression conflict banner, reader clock/battery, settings slider, corrupted-book recovery modal) to the same rules: hairline borders, no shadow, no motion, no blur, no spinner, and no emoji — while keeping every remote feature working.
+  - Added `tests/unit/paper-setting.test.ts` (7 tests) and reader paper/migration tests.
 
 ---
 
@@ -235,7 +247,7 @@ v1.0.0 Production Release & Packaging.
 ## Verification Summary
 - **TypeScript (`pnpm run typecheck`)**: PASS (`tsc --noEmit`, 0 errors)
 - **ESLint (`pnpm run lint`)**: PASS (0 errors, 0 warnings — all 14 pre-existing warnings eliminated)
-- **Unit & Integration Tests (`pnpm test`)**: PASS (280 tests passed across 41 test files)
+- **Unit & Integration Tests (`pnpm test`)**: PASS (289 tests passed across 42 test files)
 - **Frontend Build (`pnpm run build`)**: PASS (Vite production build succeeds)
 - **Rust Cargo Check (`cargo check`)**: PASS (0 errors)
 - **Rust Cargo Tests Check (`cargo check --tests`)**: PASS (0 errors)
@@ -253,3 +265,6 @@ v1.0.0 Production Release & Packaging.
   - logcat: no `SIGABRT`, no fatal signals, no `FATAL EXCEPTION` across the whole session.
 
 
+
+_Note: the DESIGN.md (design system) pass modified frontend/UI files only; no Rust sources were changed,
+so the Rust verifications above remain valid._

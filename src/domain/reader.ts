@@ -44,7 +44,20 @@ export interface ReadingPosition {
   modifiedAt?: string; // ISO 8601 UTC timestamp
 }
 
-export type ReaderTheme = "light" | "dark" | "sepia" | "amoled";
+/**
+ * Reader paper tone. DESIGN.md permits exactly two backgrounds: pure white
+ * and a warm paper white. There is no dark or accent theme.
+ */
+export type ReaderTheme = "white" | "warm";
+
+/**
+ * Normalizes any stored/unknown theme value to one of the two supported
+ * papers. Also migrates the pre-DESIGN.md names ("light", "sepia", "dark",
+ * "amoled") that older SQLite settings rows may still contain.
+ */
+export function normalizeReaderTheme(value: unknown): ReaderTheme {
+  return value === "warm" || value === "sepia" ? "warm" : "white";
+}
 
 export type ReaderFontFamily = "sans-serif" | "serif" | "monospace" | "opendyslexic";
 

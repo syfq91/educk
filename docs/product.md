@@ -22,7 +22,7 @@
 
 ### 2. Reading
 - User opens a book from the local library.
-- Reader displays paginated or continuous text with custom theme (light, sepia, dark) and adjustable font size.
+- Reader displays paginated or continuous text on one of the two supported paper backgrounds (white or warm) with adjustable font size.
 - Page navigation via tap zones, swipe gestures, or chapter table of contents.
 - App records precise reading position (EPUB CFI and percentage).
 
@@ -41,7 +41,7 @@
 - Local SQLite library database.
 - Atomic download engine with progress and cancellation.
 - Local reading position tracking and OPDS Progression 1.0 sync.
-- Light, dark, and sepia reader themes with font sizing.
+- White and warm paper backgrounds with font sizing (see [DESIGN.md](../DESIGN.md)).
 
 ### Explicitly Excluded (Out of Scope)
 - DRM systems of any kind.

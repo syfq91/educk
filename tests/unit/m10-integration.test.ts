@@ -124,7 +124,7 @@ describe("Milestone M10 Integration: Local Reading Progress", () => {
 
     readerController = new ReaderViewController(
       readerElements,
-      { theme: "light", fontSize: 18 },
+      { theme: "white", fontSize: 18 },
       {
         onPositionChange: (pos, bookId) => {
           if (bookId) {

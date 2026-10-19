@@ -517,7 +517,7 @@ Release v1.0 ◄── M17: E2E Golden Path ◄── M16: Performance ◄──
 > - Page turn navigation (touch & keyboard)
 > - Progress percentage display
 > - Font size adjustments
-> - Light, Dark, and Sepia themes
+> - White and warm paper backgrounds (DESIGN.md: only two supported)
 > - Table of Contents (TOC) navigation
 >
 > Acceptance Criteria:
@@ -706,7 +706,7 @@ CREATE TABLE sync_state (
 ```
 >
 > Edge Case States:
-> - Loading skeletons
+> - Static loading indicator (no shimmer or spinners)
 > - Network connection failure with retry button
 > - HTTP 401/403 authentication prompt
 > - Empty feed notices
@@ -850,14 +850,13 @@ Reader UX
 │
 ├── Typography Controls
 │   ├── Font size (slider, 12pt – 36pt)
-│   ├── Font family (Serif, Sans-Serif, OpenDyslexic)
+│   ├── Font family (Serif, Sans-Serif, Monospace — platform defaults, never bundled)
 │   ├── Line spacing (1.2, 1.5, 1.8)
 │   └── Margins (narrow, normal, wide)
 │
-└── Color Themes
-    ├── Light (pure white / gray text)
-    ├── Sepia (warm paper tone)
-    └── Dark / AMOLED (true black for battery saving)
+└── Paper Backgrounds (DESIGN.md: two only)
+    ├── White (pure white)
+    └── Warm (warm paper white)
 ```
 
 ---
@@ -1241,7 +1240,7 @@ Before declaring version **1.0.0 Ready for Production**, every item in this rele
 - [ ] Table of Contents (TOC) navigates accurately
 - [ ] Forward / backward navigation works via tap zones and swipe gestures
 - [ ] Reading position is saved and restored accurately
-- [ ] Dark, Light, and Sepia color themes render cleanly
+- [ ] White and warm paper backgrounds render cleanly (no third theme exists)
 - [ ] Font size changes dynamically recalculate layout
 - [ ] Malformed EPUB files produce controlled error screens
 

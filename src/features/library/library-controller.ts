@@ -185,7 +185,7 @@ export class LibraryController {
           ${book.coverUrl
             ? `<img src="${book.coverUrl}" alt="" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />`
             : ""}
-          <div class="cover-placeholder" style="display: ${book.coverUrl ? "none" : "flex"};">📖</div>
+          <div class="cover-placeholder" style="display: ${book.coverUrl ? "none" : "flex"};">No cover</div>
           ${!fileExists ? '<span class="missing-badge">Missing</span>' : ""}
         </div>
         <div class="book-info">

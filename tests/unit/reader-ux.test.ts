@@ -16,7 +16,7 @@ describe("Milestone M12: Reader UX & Settings Unit Tests", () => {
       adapter = new FoliateReaderAdapter({
         container,
         initialSettings: {
-          theme: "light",
+          theme: "white",
           fontSize: 18,
           fontFamily: "sans-serif",
           lineSpacing: 1.5,
@@ -30,8 +30,8 @@ describe("Milestone M12: Reader UX & Settings Unit Tests", () => {
       container.remove();
     });
 
-    it("should apply AMOLED theme with pitch-black #000000 background and dark color-scheme", async () => {
-      await adapter.setTheme("amoled");
+    it("should apply the warm paper with the design-system colors", async () => {
+      await adapter.setTheme("warm");
       // Adapter updates internal style sheets / variables
       expect(adapter.getState()).toBe("uninitialized");
     });
@@ -111,10 +111,8 @@ describe("Milestone M12: Reader UX & Settings Unit Tests", () => {
           <footer class="reader-footer">
             <input type="range" id="reader-progress-slider" min="0" max="1" step="0.001" value="0" />
             <div class="reader-theme-selector">
-              <button class="theme-btn active" data-theme="light">Light</button>
-              <button class="theme-btn" data-theme="sepia">Sepia</button>
-              <button class="theme-btn" data-theme="dark">Dark</button>
-              <button class="theme-btn" data-theme="amoled">Black</button>
+              <button class="theme-btn active" data-theme="white">White</button>
+              <button class="theme-btn" data-theme="warm">Warm</button>
             </div>
             <div class="reader-font-controls">
               <button id="btn-font-smaller">A-</button>
@@ -248,27 +246,27 @@ describe("Milestone M12: Reader UX & Settings Unit Tests", () => {
       expect(controller.getSettings().fontSize).toBe(12);
     });
 
-    it("should support AMOLED black theme selection with class and styling", () => {
+    it("should support warm paper selection with active state and app-wide sync", () => {
       const onSettingsChange = vi.fn();
       controller = new ReaderViewController(
         elements,
-        { theme: "light" },
+        { theme: "white" },
         { onSettingsChange },
       );
 
-      const amoledBtn = Array.from(elements.themeButtons).find(
-        (b) => b.getAttribute("data-theme") === "amoled",
+      const warmBtn = Array.from(elements.themeButtons).find(
+        (b) => b.getAttribute("data-theme") === "warm",
       );
-      expect(amoledBtn).toBeDefined();
+      expect(warmBtn).toBeDefined();
 
-      amoledBtn!.click();
+      warmBtn!.click();
 
-      expect(controller.getSettings().theme).toBe("amoled");
-      expect(elements.overlay.classList.contains("theme-amoled")).toBe(true);
-      expect(["#000000", "rgb(0, 0, 0)"]).toContain(elements.overlay.style.backgroundColor);
-      expect(amoledBtn!.classList.contains("active")).toBe(true);
+      expect(controller.getSettings().theme).toBe("warm");
+      // The paper is the app-wide preference: chrome and reader stay in step.
+      expect(document.documentElement.dataset.paper).toBe("warm");
+      expect(warmBtn!.classList.contains("active")).toBe(true);
       expect(onSettingsChange).toHaveBeenCalledWith(
-        expect.objectContaining({ theme: "amoled" }),
+        expect.objectContaining({ theme: "warm" }),
       );
     });
 
@@ -282,7 +280,7 @@ describe("Milestone M12: Reader UX & Settings Unit Tests", () => {
       // Wait for battery promise resolution
       await new Promise((r) => setTimeout(r, 10));
 
-      expect(elements.batteryDisplay!.textContent).toBe("🔋 78%");
+      expect(elements.batteryDisplay!.textContent).toBe("Battery 78%");
       expect(elements.batteryDisplay!.classList.contains("hidden")).toBe(false);
 
       // Simulate battery level and charging update
@@ -290,7 +288,7 @@ describe("Milestone M12: Reader UX & Settings Unit Tests", () => {
       mockBattery.charging = true;
       batteryChangeHandlers["levelchange"]?.();
 
-      expect(elements.batteryDisplay!.textContent).toBe("⚡ 95%");
+      expect(elements.batteryDisplay!.textContent).toBe("Charging 95%");
     });
 
     it("should acquire screen wake lock on openBook and release on close", async () => {

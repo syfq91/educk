@@ -19,6 +19,7 @@ import {
   type TocItem,
   BookLoadError,
   NavigationError,
+  normalizeReaderTheme,
 } from "../../domain/reader.ts";
 
 import type { FoliateTocItem } from "../../types/foliate-js.d.ts";
@@ -43,7 +44,7 @@ export class FoliateReaderAdapter implements Reader {
   constructor(options: FoliateAdapterOptions) {
     this.container = options.container;
     this.settings = {
-      theme: options.initialSettings?.theme ?? "light",
+      theme: normalizeReaderTheme(options.initialSettings?.theme),
       fontSize: options.initialSettings?.fontSize ?? 18,
       lineSpacing: options.initialSettings?.lineSpacing ?? 1.5,
       fontFamily: options.initialSettings?.fontFamily ?? "sans-serif",
@@ -305,7 +306,7 @@ export class FoliateReaderAdapter implements Reader {
   }
 
   public async setTheme(theme: ReaderTheme): Promise<void> {
-    this.settings.theme = theme;
+    this.settings.theme = normalizeReaderTheme(theme);
     this.applyStyles();
   }
 
@@ -413,15 +414,15 @@ export class FoliateReaderAdapter implements Reader {
     if (!this.view?.renderer?.setStyles) return;
 
     const themeColors: Record<ReaderTheme, { bg: string; text: string; link: string }> = {
-      light: { bg: "#ffffff", text: "#1a1a1a", link: "#0066cc" },
-      dark: { bg: "#121212", text: "#e0e0e0", link: "#66b3ff" },
-      sepia: { bg: "#f4ecd8", text: "#3d2b1f", link: "#7a4b22" },
-      amoled: { bg: "#000000", text: "#d4d4d4", link: "#4da6ff" },
+      // DESIGN.md: high-contrast neutrals only. Links are distinguished by
+      // underline (see the stylesheet below), never by hue.
+      white: { bg: "#ffffff", text: "#111111", link: "#111111" },
+      warm: { bg: "#f7f5ee", text: "#111111", link: "#111111" },
     };
 
     const fontFamilies: Record<ReaderFontFamily, string> = {
-      "sans-serif": '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      serif: 'Georgia, "Times New Roman", Cambria, serif',
+      "sans-serif": 'Roboto, "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      serif: '"Noto Serif", Georgia, "Times New Roman", serif',
       monospace: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
       opendyslexic: '"OpenDyslexic", "Comic Sans MS", cursive, sans-serif',
     };
@@ -432,15 +433,14 @@ export class FoliateReaderAdapter implements Reader {
       wide: 40,
     };
 
-    const colors = themeColors[this.settings.theme] || themeColors.light;
-    const fontFamily = fontFamilies[this.settings.fontFamily] || fontFamilies["sans-serif"];
+    const colors = themeColors[this.settings.theme] ?? themeColors.white;
+    const fontFamily = fontFamilies[this.settings.fontFamily] ?? fontFamilies["sans-serif"];
     const marginPx = margins[this.settings.margin] ?? 24;
-    const isDark = this.settings.theme === "dark" || this.settings.theme === "amoled";
     const dyslexicSpacing = this.settings.fontFamily === "opendyslexic" ? "letter-spacing: 0.03em; word-spacing: 0.05em;" : "";
 
     const css = `
       html {
-        color-scheme: ${isDark ? "dark" : "light"};
+        color-scheme: light;
         background-color: ${colors.bg} !important;
         color: ${colors.text} !important;
       }
@@ -460,6 +460,7 @@ export class FoliateReaderAdapter implements Reader {
       }
       a {
         color: ${colors.link} !important;
+        text-decoration: underline !important;
       }
     `;
 

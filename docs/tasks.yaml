@@ -227,7 +227,7 @@ tasks:
     status: done
   - id: UI-005
     milestone: M8
-    description: Implement infinite scroll with IntersectionObserver, loading skeletons, network retry, and 401 auth modal
+    description: Implement infinite scroll with IntersectionObserver, static loading states, network retry, and 401 auth modal
     status: done
   - id: UI-006
     milestone: M8
@@ -456,4 +456,16 @@ tasks:
   - id: OPDS-008
     milestone: M19
     description: Navigation-entry drill-down (Browse action, card tap, breadcrumb push/back) so OPDS navigation feeds such as Calibre-Web, Komga, BookFlow and ManyBooks roots can be traversed, plus a `← Catalogs` back action so a populated feed is never a dead end
+    status: done
+  - id: UX-001
+    milestone: M12
+    description: Implement the DESIGN.md monochrome design system in src/styles.css (tokens, inversion for selection, hairline separation, 48dp touch floor, no animation/shadow/gradient)
+    status: done
+  - id: UX-002
+    milestone: M12
+    description: Restrict reader themes to the two DESIGN.md papers (white/warm) with normalization of legacy stored values
+    status: done
+  - id: UX-003
+    milestone: M12
+    description: Add the user-switchable paper background preference shared by the app chrome and the reader
     status: done

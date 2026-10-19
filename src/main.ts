@@ -13,10 +13,12 @@ import {
 } from "./services/progression/index.ts";
 import { AppLifecycleManager } from "./services/lifecycle/lifecycle-manager.ts";
 import { AppProfiler } from "./services/performance/profiler.ts";
-import type { ReaderSettings, ReaderTheme, ReaderFontFamily } from "./domain/reader.ts";
+import { PaperSettingController, getPaper } from "./features/settings/paper.ts";
+import type { ReaderSettings, ReaderFontFamily } from "./domain/reader.ts";
 import type { Book } from "./domain/database.ts";
 
 let readerController: ReaderViewController | null = null;
+let paperController: PaperSettingController | null = null;
 let repos: DatabaseRepositories | null = null;
 let progressionSyncManager: ProgressionSyncManager | null = null;
 let currentReadingBookId: string | null = null;
@@ -56,6 +58,11 @@ function setupNavigation(): void {
         }
       });
     });
+  });
+
+  // The library empty state's single call to action opens the catalog view.
+  document.querySelector<HTMLButtonElement>("#btn-empty-browse")?.addEventListener("click", () => {
+    document.querySelector<HTMLButtonElement>('.bottom-nav .nav-item[data-target="view-catalogs"]')?.click();
   });
 }
 
@@ -198,14 +205,12 @@ function getReaderElements(): ReaderViewElements | null {
 
 // Synchronize global Settings tab UI inputs with reader settings
 function syncSettingsView(settings: ReaderSettings): void {
-  const themeSelect = document.querySelector<HTMLSelectElement>("#pref-theme");
   const fontSelect = document.querySelector<HTMLSelectElement>("#pref-font-family");
   const fontSizeInput = document.querySelector<HTMLInputElement>("#pref-font-size");
   const fontSizeVal = document.querySelector<HTMLElement>("#pref-font-size-val");
   const lineSpacingSelect = document.querySelector<HTMLSelectElement>("#pref-line-spacing");
   const marginSelect = document.querySelector<HTMLSelectElement>("#pref-margin");
 
-  if (themeSelect) themeSelect.value = settings.theme;
   if (fontSelect) fontSelect.value = settings.fontFamily;
   if (fontSizeInput) fontSizeInput.value = String(settings.fontSize);
   if (fontSizeVal) fontSizeVal.textContent = `${settings.fontSize}px`;
@@ -218,7 +223,6 @@ function setupSettingsView(
   repositories: DatabaseRepositories | null,
   readerCtrl: ReaderViewController | null,
 ): void {
-  const themeSelect = document.querySelector<HTMLSelectElement>("#pref-theme");
   const fontSelect = document.querySelector<HTMLSelectElement>("#pref-font-family");
   const fontSizeInput = document.querySelector<HTMLInputElement>("#pref-font-size");
   const fontSizeVal = document.querySelector<HTMLElement>("#pref-font-size-val");
@@ -227,7 +231,7 @@ function setupSettingsView(
 
   const saveAndApply = () => {
     const current = readerCtrl?.getSettings() ?? {
-      theme: "light" as const,
+      theme: "white" as const,
       fontSize: 18,
       lineSpacing: 1.5,
       fontFamily: "sans-serif" as const,
@@ -235,7 +239,7 @@ function setupSettingsView(
     };
 
     const newSettings: ReaderSettings = {
-      theme: (themeSelect?.value as ReaderTheme) || current.theme,
+      theme: current.theme, // the paper is owned by the Appearance switch
       fontFamily: (fontSelect?.value as ReaderFontFamily) || current.fontFamily,
       fontSize: fontSizeInput ? parseInt(fontSizeInput.value, 10) || current.fontSize : current.fontSize,
       lineSpacing: lineSpacingSelect ? parseFloat(lineSpacingSelect.value) || current.lineSpacing : current.lineSpacing,
@@ -248,7 +252,6 @@ function setupSettingsView(
     }
   };
 
-  themeSelect?.addEventListener("change", saveAndApply);
   fontSelect?.addEventListener("change", saveAndApply);
   lineSpacingSelect?.addEventListener("change", saveAndApply);
   marginSelect?.addEventListener("change", saveAndApply);
@@ -275,7 +278,7 @@ function setupReader(
   readerController = new ReaderViewController(
     elements,
     {
-      theme: "light",
+      theme: getPaper(),
       fontSize: 18,
       lineSpacing: 1.5,
       fontFamily: "sans-serif",
@@ -283,6 +286,8 @@ function setupReader(
     },
     {
       onSettingsChange: (settings) => {
+        // Keep the Settings appearance switch in step with the reader.
+        paperController?.sync(settings.theme);
         if (repos) {
           void repos.settings.setJSON("reader.settings", settings);
         }
@@ -317,12 +322,20 @@ function setupReader(
     },
   );
 
-  // Restore saved reader preferences from SQLite if available
+  // Restore saved reader preferences from SQLite if available.
+  // The paper background is deliberately excluded: it is owned by the
+  // appearance preference (localStorage) so the app chrome and the reader can
+  // never disagree about which of the two DESIGN.md backgrounds is active.
   if (repos) {
-    void repos.settings.getJSON<ReaderSettings>("reader.settings").then((savedSettings) => {
+    void repos.settings.getJSON<Partial<ReaderSettings>>("reader.settings").then((savedSettings) => {
       if (savedSettings) {
-        readerController?.applySettings(savedSettings);
-        syncSettingsView(savedSettings);
+        // The paper background is owned by the appearance preference
+        // (localStorage), so the app chrome and the reader can never disagree
+        // about which of the two DESIGN.md backgrounds is active.
+        readerController?.applySettings({ ...savedSettings, theme: getPaper() });
+        if (readerController) {
+          syncSettingsView(readerController.getSettings());
+        }
       }
     });
   }
@@ -378,7 +391,7 @@ async function initApp(): Promise<void> {
     }
     if (backendStatusEl) {
       backendStatusEl.textContent = "Connected (Rust Tauri 2)";
-      backendStatusEl.style.color = "var(--status-success)";
+      backendStatusEl.style.color = "var(--color-primary)";
     }
 
     // Milestone M13: Clean up any orphan .part download files from previous crashes
@@ -394,7 +407,7 @@ async function initApp(): Promise<void> {
     console.warn("Tauri backend not detected or command failed:", err);
     if (backendStatusEl) {
       backendStatusEl.textContent = "Web preview (IPC disconnected)";
-      backendStatusEl.style.color = "var(--text-secondary)";
+      backendStatusEl.style.color = "var(--color-secondary)";
     }
   }
 }
@@ -654,11 +667,23 @@ function setupCatalogs(
   return catalogsController;
 }
 
+// Appearance: the user-selectable paper background (DESIGN.md: two
+// backgrounds only — white and warm paper white). The same preference drives
+// the reader, so the Settings switch and the in-reader switch stay in sync.
+function setupAppearance(): void {
+  const paperButtons = document.querySelectorAll<HTMLButtonElement>(".paper-toggle .btn-paper");
+  if (paperButtons.length === 0) return;
+  paperController = new PaperSettingController(paperButtons, (paper) => {
+    readerController?.applySettings({ theme: paper });
+  });
+}
+
 window.addEventListener("DOMContentLoaded", async () => {
   const profiler = AppProfiler.getInstance();
   profiler.markColdStart();
 
   setupNavigation();
+  setupAppearance();
   const dbRepos = await initDatabase();
   profiler.markDatabaseReady();
 
